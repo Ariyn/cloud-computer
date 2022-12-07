@@ -18,67 +18,7 @@ func init() {
 	flag.StringVar(&InputName2, "i2", "input_2", "input_2")
 }
 
-type Handler func(i ...int) int
 type BoolHandler func(i ...bool) (o bool)
-
-func Run(handler Handler, inputPaths []string, outputPaths []string) (err error) {
-	log.Println(handler, inputPaths, outputPaths)
-
-	inputs := make([]chan int, 0)
-	for _, path := range inputPaths {
-		input, err := openInput(path)
-		if err != nil {
-			log.Println(path, err)
-			return err
-		}
-
-		defer input.Close()
-
-		ch := readAsync(input)
-		inputs = append(inputs, ch)
-	}
-
-	outputs := make([]chan int, 0)
-	for _, path := range outputPaths {
-		output, err := openOutput(path)
-		if err != nil {
-			log.Println(path, err)
-			return err
-		}
-		defer output.Close()
-
-		ch := writeAsync(output)
-		outputs = append(outputs, ch)
-	}
-
-	previousValues := make([]int, len(inputPaths))
-
-	cases := make([]reflect.SelectCase, 0)
-	for _, ch := range inputs {
-		cases = append(cases, reflect.SelectCase{
-			Dir:  reflect.SelectRecv,
-			Chan: reflect.ValueOf(ch),
-		})
-	}
-
-	for {
-		index, value, ok := reflect.Select(cases)
-		if !ok {
-			break
-		}
-
-		previousValues[index] = int(value.Int())
-
-		output := handler(previousValues...)
-		log.Println(previousValues, output)
-
-		for _, ch := range outputs {
-			ch <- output
-		}
-	}
-
-	return nil
-}
 
 // TODO: combine this and run
 func RunRedis(handler BoolHandler, name string, inputIds []string, outputSize int) (err error) {
