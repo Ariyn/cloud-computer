@@ -57,6 +57,6 @@ Terminal 3
 
 ## Next things
 
-[ ] group by name
-[ ] control config with file
-[ ] make more comfortable with creating large circuit
+- [x] group by name
+- [ ] control config with file
+- [ ] make more comfortable with creating large circuit
