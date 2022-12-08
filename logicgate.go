@@ -11,27 +11,34 @@ import (
 var InputName1 string
 var InputName2 string
 var Name string
+var GroupName string
 
 func init() {
 	flag.StringVar(&Name, "name", "", "and, or, not, etc...")
 	flag.StringVar(&InputName1, "i1", "input_1", "input_1")
 	flag.StringVar(&InputName2, "i2", "input_2", "input_2")
+	flag.StringVar(&GroupName, "group", "", "group name like adder")
 }
 
 type BoolHandler func(i ...bool) (o bool)
 
 // TODO: combine this and run
-func RunRedis(handler BoolHandler, name string, inputIds []string, outputSize int) (err error) {
-	log.Println(handler, name, inputIds, outputSize)
+func RunRedis(handler BoolHandler, groupName, name string, inputIds []string, outputSize int) (err error) {
+	log.Println(handler, groupName, name, inputIds, outputSize)
 
 	ctx := context.TODO()
 	client := ConnectRedis()
 
-	err = writeRedis(ctx, client, name+"_status", false)
+	identifier := name
+	if groupName != "" {
+		identifier = groupName + "." + identifier
+	}
+
+	err = writeRedis(ctx, client, identifier+".status", false)
 	if err != nil {
 		panic(err)
 	}
-	defer deleteRedis(ctx, client, name+"_status")
+	defer deleteRedis(ctx, client, identifier+".status")
 
 	inputs := make([]<-chan bool, 0)
 	for _, inputId := range inputIds {
@@ -41,7 +48,7 @@ func RunRedis(handler BoolHandler, name string, inputIds []string, outputSize in
 
 	outputs := make([]chan<- bool, 0)
 	for i := 0; i < outputSize; i++ {
-		outputName := fmt.Sprintf("%s_output_%d", name, i+1)
+		outputName := fmt.Sprintf("%s.output.%d", identifier, i+1)
 		outputs = append(outputs, writeAsyncRedis(ctx, client, outputName))
 	}
 
@@ -69,7 +76,7 @@ func RunRedis(handler BoolHandler, name string, inputIds []string, outputSize in
 			continue
 		}
 
-		err = writeRedis(ctx, client, name+"_status", output)
+		err = writeRedis(ctx, client, identifier+".status", output)
 		if err != nil {
 			panic(err)
 		}

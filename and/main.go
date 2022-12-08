@@ -17,7 +17,7 @@ func main() {
 	log.Println("start")
 	err := cc.RunRedis(func(i ...bool) bool {
 		return i[0] && i[1]
-	}, name, []string{cc.InputName1, cc.InputName2}, 1)
+	}, cc.GroupName, name, []string{cc.InputName1, cc.InputName2}, 1)
 	if err != nil {
 		panic(err)
 	}
