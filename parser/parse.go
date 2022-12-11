@@ -1,9 +1,9 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
+	cc "github.com/ariyn/cloud-computer"
 	"io"
 	"log"
 	"os"
@@ -12,18 +12,21 @@ import (
 	"strings"
 )
 
-var InvalidElement error
 var file string
 
 var (
 	commentReg = regexp.MustCompile(`(#.+)$`)
 )
 
+type command interface {
+	Bash() string
+}
+
+var _ command = (*definition)(nil)
+
 func init() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	flag.StringVar(&file, "file", "", "file name")
-
-	InvalidElement = errors.New("invalid element")
 }
 
 func main() {
@@ -59,8 +62,8 @@ func main() {
 }
 
 func parse(script string) (bash string, err error) {
-	definitionsByName := make(map[string]definition)
-	definitionsByName["inputs"] = definition{
+	commandsByName := make(map[string]command)
+	commandsByName["inputs"] = &definition{
 		typ:        "input",
 		name:       "inputs",
 		outputSize: 2,
@@ -83,57 +86,98 @@ func parse(script string) (bash string, err error) {
 		case "define":
 			inputSize, err := strconv.Atoi(words[3])
 			if err != nil {
+				panic(err)
 				return bash, err
 			}
 
 			outputSize, err := strconv.Atoi(words[4])
 			if err != nil {
+				panic(err)
 				return bash, err
 			}
 
 			def := parseDefine(words[1], words[2], inputSize, outputSize)
-			definitionsByName[def.name] = def
-
+			commandsByName[def.name] = &def
 		case "connect":
 			e1, err := parseElement(words[1])
 			if err != nil {
 				return bash, err
 			}
-			if _, ok := definitionsByName[e1.GateName]; !ok {
-				err = InvalidElement
+			if _, ok := commandsByName[e1.GateName]; !ok {
+				err = cc.InvalidElement
+				panic(err)
 				return bash, err
 			}
-			inputGate := definitionsByName[e1.GateName]
+
+			inputGate := commandsByName[e1.GateName].(*definition)
 
 			e2, err := parseElement(words[2])
 			if err != nil {
+				panic(err)
 				return bash, err
 			}
-			if _, ok := definitionsByName[e2.GateName]; !ok {
-				err = InvalidElement
-				return bash, err
+			if _, ok := commandsByName[e2.GateName]; !ok {
+				if !e2.IsParameter {
+					err = cc.InvalidElement
+					log.Println(e2.GateName)
+					panic(err)
+					return bash, err
+				}
 			}
 			//outputGate := definitionsByName[e2.GateName]
 
-			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf("-%s %s", e1.Part, e2.String()))
+			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf("-inputs %s", e2.String()))
 
-			definitionsByName[e1.GateName] = inputGate
+			commandsByName[e1.GateName] = inputGate
+
+		case "alias":
+			alias, err := parseAlias(words[1], words[2])
+			if err != nil {
+				panic(err)
+				return "", nil
+			}
+
+			commandsByName[alias.Name] = alias
 		}
 
 		//log.Println(len(line), line)
 	}
 
-	delete(definitionsByName, "inputs")
+	delete(commandsByName, "inputs")
 
-	bashLines := []string{
-		"#!/bin/bash",
-	}
-	for _, def := range definitionsByName {
-		log.Println(def.Bash())
-		bashLines = append(bashLines, fmt.Sprintf(`(%s && wait) & \`, def.Bash()))
+	bashLines := make([]string, 0)
+	for _, cmd := range commandsByName {
+		log.Println(cmd.Bash())
+		bashLines = append(bashLines, fmt.Sprintf(`(%s && wait)`, cmd.Bash()))
 	}
 
-	return strings.Join(bashLines, "\n"), nil
+	bash = `#!/bin/bash
+
+while (( $# )); do
+  echo "first argument $1"
+  case $1 in
+    --name) name=$2;shift;
+    ;;
+	--i1) i1=$2; shift;
+	;;
+	--i2) i2=$2; shift;
+	;;
+    *) echo "unknown $1"; break
+  esac
+  shift
+done
+
+if [ -z ${i1+x} ]; then
+	i1="inputs.1"
+fi
+
+if [ -z ${i2+x} ]; then
+	i2="inputs.2"
+fi
+
+` + strings.Join(bashLines, "& \\\n")
+
+	return bash, nil
 }
 
 type definition struct {
@@ -152,7 +196,7 @@ func (def *definition) Bash() string {
 	}
 
 	inputArgument := strings.Join(inputs, " ")
-	return fmt.Sprintf(`%s -name '%s' %s`, def.bin, def.name, inputArgument)
+	return fmt.Sprintf(`%s -name ${name}.%s %s`, def.bin, def.name, inputArgument)
 }
 
 func parseDefine(name, typ string, inputSize, outputSize int) (def definition) {
@@ -166,38 +210,50 @@ func parseDefine(name, typ string, inputSize, outputSize int) (def definition) {
 	return
 }
 
-type Element struct {
-	GateName string
-	Part     string
-}
-
-func (e Element) String() string {
-	return fmt.Sprintf(`%s.%s`, e.GateName, e.Part)
-}
-
-func (e Element) IsValidPart() (err error) {
-	// TODO: not enough validation
-	if e.Part == "i1" || e.Part == "i2" || e.Part == "1" || e.Part == "2" || e.Part == "o1" {
-		return nil
+func parseElement(word string) (element cc.Element, err error) {
+	if word[0] == '$' {
+		element.GateName = word
+		element.IsParameter = true
+		return
 	}
 
-	return InvalidElement
-}
-
-func parseElement(word string) (element Element, err error) {
 	elements := strings.Split(word, ".")
 	if len(elements) < 1 {
-		err = InvalidElement
+		err = cc.InvalidElement
+		panic(err)
 		return
 	}
 
 	element.GateName = elements[0]
 	element.Part = elements[1]
 
-	err = element.IsValidPart()
+	//err = element.IsValidPart()
+	//if err != nil {
+	//	panic(err)
+	//	return
+	//}
+
+	return
+}
+
+var _ command = (*Alias)(nil)
+
+type Alias struct {
+	Name   string
+	Target cc.Element
+}
+
+func (a Alias) Bash() string {
+	return fmt.Sprintf(`bin/alias -name "${name}"."%s" -inputs "${name}".%s`, a.Name, a.Target.String())
+}
+
+func parseAlias(name, target string) (alias Alias, err error) {
+	alias.Target, err = parseElement(target)
 	if err != nil {
 		return
 	}
+
+	alias.Name = name
 
 	return
 }
