@@ -13,9 +13,12 @@ func main() {
 		name = "not"
 	}
 
+	inputs := cc.ParseInputs(cc.Inputs...)
+	outputs := cc.CreateOutputs(1)
+
 	err := cc.RunRedis(func(i ...bool) bool {
 		return !i[0]
-	}, cc.GroupName, name, []string{cc.InputName1}, 1)
+	}, name, inputs, outputs, true)
 	if err != nil {
 		panic(err)
 	}

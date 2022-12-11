@@ -55,6 +55,6 @@ func main() {
 		}
 
 		previousValues[index] = value.Bool()
-		log.Printf("%d: %v", index, previousValues[index])
+		//log.Printf("%d: %v", index, previousValues[index])
 	}
 }

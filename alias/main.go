@@ -10,18 +10,18 @@ func main() {
 	flag.Parse()
 
 	name := cc.Name
-	if name == "" {
-		name = "and"
-	}
 
 	log.Println("start")
 
 	inputs := cc.ParseInputs(cc.Inputs...)
-	outputs := cc.CreateOutputs(1)
+	outputs := []cc.Element{{
+		IsAlias: true,
+	}}
 
+	log.Println("aliasing", name, "input", inputs[0].String())
 	err := cc.RunRedis(func(i ...bool) bool {
-		return i[0] && i[1]
-	}, name, inputs, outputs, true)
+		return i[0]
+	}, name, inputs, outputs, false)
 	if err != nil {
 		panic(err)
 	}
