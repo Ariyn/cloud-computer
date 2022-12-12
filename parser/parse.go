@@ -18,6 +18,13 @@ var (
 	commentReg = regexp.MustCompile(`(#.+)$`)
 )
 
+const (
+	bashInputParameterFormat = "-i%d) i%d=$2; shift; ;;"
+	bashInputCheckFormat     = `if [ -z ${i%d+x} ]; then
+	i%d="inputs.%d"
+fi`
+)
+
 type command interface {
 	Bash() string
 }
@@ -68,6 +75,8 @@ func parse(script string) (bash string, err error) {
 		name:       "inputs",
 		outputSize: 2,
 	}
+
+	inputSize := 2
 
 	lines := strings.Split(script, "\n")
 	for _, line := range lines {
@@ -126,7 +135,7 @@ func parse(script string) (bash string, err error) {
 			}
 			//outputGate := definitionsByName[e2.GateName]
 
-			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf("-inputs %s", e2.String()))
+			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf(`-%s "%s"`, e1.Part, e2.Bash()))
 
 			commandsByName[e1.GateName] = inputGate
 
@@ -138,6 +147,12 @@ func parse(script string) (bash string, err error) {
 			}
 
 			commandsByName[alias.Name] = alias
+
+		case "inputs":
+			inputSize, err = strconv.Atoi(words[1])
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		//log.Println(len(line), line)
@@ -156,26 +171,34 @@ func parse(script string) (bash string, err error) {
 while (( $# )); do
   echo "first argument $1"
   case $1 in
-    --name) name=$2;shift;
+    -name) name=$2;shift;
     ;;
-	--i1) i1=$2; shift;
-	;;
-	--i2) i2=$2; shift;
-	;;
+	{input_parameters}
     *) echo "unknown $1"; break
   esac
   shift
 done
 
-if [ -z ${i1+x} ]; then
-	i1="inputs.1"
-fi
+{input_checks}
 
-if [ -z ${i2+x} ]; then
-	i2="inputs.2"
+if [ -n "$name" ]; then
+  name_variable="${name}."
 fi
-
 ` + strings.Join(bashLines, "& \\\n")
+
+	inputParameters := make([]string, 0)
+	inputCheckers := make([]string, 0)
+	for i := 1; i <= inputSize; i++ {
+		pf := fmt.Sprintf(bashInputParameterFormat, i, i)
+		inputParameters = append(inputParameters, pf)
+
+		cf := fmt.Sprintf(bashInputCheckFormat, i, i, i)
+		inputCheckers = append(inputCheckers, cf)
+	}
+
+	bash = strings.ReplaceAll(bash, "{input_parameters}", strings.Join(inputParameters, "\n\n"))
+
+	bash = strings.ReplaceAll(bash, "{input_checks}", strings.Join(inputCheckers, "\n\n"))
 
 	return bash, nil
 }
@@ -196,7 +219,7 @@ func (def *definition) Bash() string {
 	}
 
 	inputArgument := strings.Join(inputs, " ")
-	return fmt.Sprintf(`%s -name ${name}.%s %s`, def.bin, def.name, inputArgument)
+	return fmt.Sprintf(`%s -name "${name_variable}%s" %s`, def.bin, def.name, inputArgument)
 }
 
 func parseDefine(name, typ string, inputSize, outputSize int) (def definition) {
@@ -244,7 +267,7 @@ type Alias struct {
 }
 
 func (a Alias) Bash() string {
-	return fmt.Sprintf(`bin/alias -name "${name}"."%s" -inputs "${name}".%s`, a.Name, a.Target.String())
+	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -inputs "${name_variable}%s"`, a.Name, a.Target.String())
 }
 
 func parseAlias(name, target string) (alias Alias, err error) {
