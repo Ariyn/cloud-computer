@@ -64,6 +64,17 @@ func (e Element) IsValidPart() (err error) {
 	return InvalidElement
 }
 
+func (e Element) Bash() string {
+	name := e.String()
+
+	log.Println(name[1:6])
+	if name[0] == '$' && 7 <= len(name) && name[1:7] == "inputs" {
+		name = fmt.Sprintf("${i%s}", strings.ReplaceAll(name, "$inputs.", ""))
+	}
+	log.Println(name)
+	return fmt.Sprintf("${name_variable}%s", name)
+}
+
 func parseElement(words ...string) Element {
 	e := Element{
 		GateName: strings.Join(words, "."),
