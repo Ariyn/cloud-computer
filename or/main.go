@@ -19,8 +19,12 @@ func main() {
 	inputs := cc.ParseInputs(cc.Inputs...)
 	outputs := cc.CreateOutputs(1)
 
-	err := cc.RunRedis(func(i ...bool) bool {
-		return i[0] || i[1]
+	err := cc.RunRedis(func(inputs ...bool) (result bool) {
+		result = inputs[0]
+		for _, b := range inputs[1:] {
+			result = result || b
+		}
+		return
 	}, name, inputs, outputs, true)
 	if err != nil {
 		panic(err)

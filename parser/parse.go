@@ -135,7 +135,7 @@ func parse(script string) (bash string, err error) {
 			}
 			//outputGate := definitionsByName[e2.GateName]
 
-			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf(`-%s "%s"`, e1.Part, e2.Bash()))
+			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf(`-%s "%s"`, "inputs", e2.Bash()))
 
 			commandsByName[e1.GateName] = inputGate
 
@@ -169,10 +169,8 @@ func parse(script string) (bash string, err error) {
 	bash = `#!/bin/bash
 
 while (( $# )); do
-  echo "first argument $1"
   case $1 in
-    -name) name=$2;shift;
-    ;;
+    -name) name=$2;shift; ;;
 	{input_parameters}
     *) echo "unknown $1"; break
   esac
@@ -189,7 +187,7 @@ fi
 	inputParameters := make([]string, 0)
 	inputCheckers := make([]string, 0)
 	for i := 1; i <= inputSize; i++ {
-		pf := fmt.Sprintf(bashInputParameterFormat, i, i)
+		pf := "\t" + fmt.Sprintf(bashInputParameterFormat, i, i)
 		inputParameters = append(inputParameters, pf)
 
 		cf := fmt.Sprintf(bashInputCheckFormat, i, i, i)
