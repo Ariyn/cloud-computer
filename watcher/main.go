@@ -55,6 +55,22 @@ func main() {
 		}
 
 		previousValues[index] = value.Bool()
+
+		printBits(previousValues)
 		//log.Printf("%d: %v", index, previousValues[index])
 	}
+}
+
+func printBits(bits []bool) {
+	l := ""
+	for i := range bits {
+		b := bits[len(bits)-i-1]
+		if b {
+			l += "1"
+		} else {
+			l += "0"
+		}
+	}
+
+	log.Println(l)
 }

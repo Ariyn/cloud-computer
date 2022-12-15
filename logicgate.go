@@ -36,7 +36,8 @@ func init() {
 	InvalidElement = errors.New("invalid element")
 }
 
-type BoolHandler func(i ...bool) (o bool)
+// type BoolHandler func(prev, curr bool) (o bool)
+type BoolHandler func(inputs ...bool) (o bool)
 
 // TODO: merge this and parse.Element
 type Element struct {
@@ -67,7 +68,6 @@ func (e Element) IsValidPart() (err error) {
 func (e Element) Bash() string {
 	name := e.String()
 
-	log.Println(name[1:6])
 	if name[0] == '$' && 7 <= len(name) && name[1:7] == "inputs" {
 		name = fmt.Sprintf("${i%s}", strings.ReplaceAll(name, "$inputs.", ""))
 	}
