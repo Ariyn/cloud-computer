@@ -15,7 +15,7 @@ func main() {
 
 	err := cc.RunRedis(func(i ...bool) bool {
 		return !i[0]
-	}, name, inputs, outputs, true)
+	}, name, inputs, outputs, cc.UseOptimization)
 	if err != nil {
 		panic(err)
 	}

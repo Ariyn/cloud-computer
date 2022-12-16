@@ -26,6 +26,7 @@ func (asf *ArrayStringFlag) Set(v string) error {
 
 var Inputs ArrayStringFlag
 var Name string
+var UseOptimization bool = true
 
 func init() {
 	//flag.StringVar(&Name, "name", "", "and, or, not, etc...")
@@ -50,6 +51,8 @@ func parseArguments() {
 			Inputs = append(Inputs, os.Args[index+1])
 		} else if arg == "-name" {
 			Name = os.Args[index+1]
+		} else if arg == "-no-optimization" {
+			UseOptimization = false
 		}
 	}
 }
@@ -148,6 +151,16 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 
 	previousValues := make([]bool, len(inputs))
 	previousOutput := false
+
+	output := handler(previousValues...)
+	err = writeRedis(ctx, client, name+".status", output)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, ch := range outputs {
+		ch <- output
+	}
 
 	cases := make([]reflect.SelectCase, 0)
 	for _, ch := range inputs {

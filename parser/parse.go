@@ -105,7 +105,12 @@ func parse(script string) (bash string, err error) {
 				return bash, err
 			}
 
-			def := parseDefine(words[1], words[2], inputSize, outputSize)
+			noOptimization := false
+			if 4 < len(words) && words[len(words)-1] == "no-optimization" {
+				noOptimization = true
+			}
+
+			def := parseDefine(words[1], words[2], inputSize, outputSize, noOptimization)
 			commandsByName[def.name] = &def
 		case "connect":
 			e1, err := parseElement(words[1])
@@ -175,6 +180,7 @@ while (( $# )); do
   case $1 in
     -name) name=$2;shift; ;;
     -child) child=1; ;;
+    -no-optimization) ;;
 
 {input_parameters}
 
@@ -224,6 +230,7 @@ type definition struct {
 	inputSize       int
 	outputSize      int
 	inputConnection []string
+	noOptimization  bool
 }
 
 func (def *definition) Bash() string {
@@ -238,15 +245,21 @@ func (def *definition) Bash() string {
 	}
 
 	inputArgument := strings.Join(inputs, " ")
-	return fmt.Sprintf(`%s -name "${name_variable}%s" %s %s`, def.bin, def.name, child, inputArgument)
+
+	noOptimization := ""
+	if def.noOptimization {
+		noOptimization = "-no-optimization"
+	}
+	return fmt.Sprintf(`%s %s -name "${name_variable}%s" %s %s`, def.bin, noOptimization, def.name, child, inputArgument)
 }
 
-func parseDefine(name, typ string, inputSize, outputSize int) (def definition) {
+func parseDefine(name, typ string, inputSize, outputSize int, noOptimization bool) (def definition) {
 	def.typ = typ
 	def.bin = "bin/" + typ
 	def.name = name
 	def.inputSize = inputSize
 	def.outputSize = outputSize
+	def.noOptimization = noOptimization
 	def.inputConnection = make([]string, 0)
 
 	return

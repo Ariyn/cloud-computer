@@ -22,7 +22,7 @@ func main() {
 			result = result != b
 		}
 		return
-	}, name, inputs, outputs, true)
+	}, name, inputs, outputs, cc.UseOptimization)
 	if err != nil {
 		panic(err)
 	}
