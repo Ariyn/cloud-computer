@@ -134,8 +134,8 @@ func parse(script string) (bash string, err error) {
 				}
 			}
 			//outputGate := definitionsByName[e2.GateName]
-
-			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf(`-%s "%s"`, "inputs", e2.Bash()))
+			log.Println("e1.part", e1.Part)
+			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf(`-%s "%s"`, e1.Part, e2.Bash()))
 
 			commandsByName[e1.GateName] = inputGate
 
@@ -162,16 +162,22 @@ func parse(script string) (bash string, err error) {
 
 	bashLines := make([]string, 0)
 	for _, cmd := range commandsByName {
-		log.Println(cmd.Bash())
-		bashLines = append(bashLines, fmt.Sprintf(`(%s && wait)`, cmd.Bash()))
+		//log.Println(cmd.Bash())
+		bashLines = append(bashLines, cmd.Bash())
+		//bashLines = append(bashLines, fmt.Sprintf(`(%s && wait)`, cmd.Bash()))
 	}
 
 	bash = `#!/bin/bash
 
+trap "kill 0" SIGINT
+
 while (( $# )); do
   case $1 in
     -name) name=$2;shift; ;;
-	{input_parameters}
+    -child) child=1; ;;
+
+{input_parameters}
+
     *) echo "unknown $1"; break
   esac
   shift
@@ -182,21 +188,31 @@ done
 if [ -n "$name" ]; then
   name_variable="${name}."
 fi
+
+if [ -z ${child+x} ]; then
+{input_names}
+fi
+
 ` + strings.Join(bashLines, "& \\\n")
 
 	inputParameters := make([]string, 0)
 	inputCheckers := make([]string, 0)
+	inputNames := make([]string, 0)
 	for i := 1; i <= inputSize; i++ {
-		pf := "\t" + fmt.Sprintf(bashInputParameterFormat, i, i)
+		pf := "    " + fmt.Sprintf(bashInputParameterFormat, i, i)
 		inputParameters = append(inputParameters, pf)
 
 		cf := fmt.Sprintf(bashInputCheckFormat, i, i, i)
 		inputCheckers = append(inputCheckers, cf)
+
+		inputNames = append(inputNames, fmt.Sprintf("  i%d=${name_variable}${i%d}", i, i))
 	}
 
 	bash = strings.ReplaceAll(bash, "{input_parameters}", strings.Join(inputParameters, "\n\n"))
 
 	bash = strings.ReplaceAll(bash, "{input_checks}", strings.Join(inputCheckers, "\n\n"))
+
+	bash = strings.ReplaceAll(bash, "{input_names}", strings.Join(inputNames, "\n\n"))
 
 	return bash, nil
 }
@@ -211,13 +227,18 @@ type definition struct {
 }
 
 func (def *definition) Bash() string {
+	child := ""
+	if !(def.typ == "and" || def.typ == "or" || def.typ == "not" || def.typ == "xor") {
+		child = "-child"
+	}
+
 	inputs := make([]string, def.inputSize)
 	for i, c := range def.inputConnection {
 		inputs[i] = fmt.Sprintf(`%s`, c)
 	}
 
 	inputArgument := strings.Join(inputs, " ")
-	return fmt.Sprintf(`%s -name "${name_variable}%s" %s`, def.bin, def.name, inputArgument)
+	return fmt.Sprintf(`%s -name "${name_variable}%s" %s %s`, def.bin, def.name, child, inputArgument)
 }
 
 func parseDefine(name, typ string, inputSize, outputSize int) (def definition) {
@@ -265,7 +286,7 @@ type Alias struct {
 }
 
 func (a Alias) Bash() string {
-	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -inputs "${name_variable}%s"`, a.Name, a.Target.String())
+	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -i1 "${name_variable}%s"`, a.Name, a.Target.String())
 }
 
 func parseAlias(name, target string) (alias Alias, err error) {
