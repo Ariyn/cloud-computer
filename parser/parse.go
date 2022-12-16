@@ -267,6 +267,11 @@ func parseElement(word string) (element cc.Element, err error) {
 	}
 
 	element.GateName = elements[0]
+
+	if _, err := strconv.Atoi(element.GateName); err == nil {
+		return element, nil
+	}
+
 	element.Part = elements[1]
 
 	//err = element.IsValidPart()
@@ -286,7 +291,17 @@ type Alias struct {
 }
 
 func (a Alias) Bash() string {
-	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -i1 "${name_variable}%s"`, a.Name, a.Target.String())
+	target := a.Target.String()
+
+	if target[0] == '$' && 7 <= len(target) && target[1:7] == "inputs" {
+		target = fmt.Sprintf("${i%s}", strings.ReplaceAll(target, "$inputs.", ""))
+	}
+
+	if !(target == "0" || target == "1") && target[0] != '$' {
+		target = "${name_variable}" + target
+	}
+
+	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -i1 "%s"`, a.Name, target)
 }
 
 func parseAlias(name, target string) (alias Alias, err error) {
