@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var InvalidElement error
@@ -182,4 +183,45 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	return nil
+}
+
+func Clock(clk int, outputElements []Element) (err error) {
+	log.Println(clk, outputElements)
+
+	ctx := context.TODO()
+	client := ConnectRedis()
+
+	name := fmt.Sprintf("clock.%dHz", clk)
+
+	err = writeRedis(ctx, client, name+".status", false)
+	if err != nil {
+		panic(err)
+	}
+	defer deleteRedis(ctx, client, name+".status")
+
+	outputs := make([]chan<- bool, 0)
+	for _, element := range outputElements {
+		element.GateName = name
+		outputs = append(outputs, writeAsyncRedis(ctx, client, element.String()))
+	}
+
+	previousValues := false
+
+	for {
+		start := time.Now()
+		curr := !previousValues
+
+		err = writeRedis(ctx, client, name+".status", curr)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, ch := range outputs {
+			ch <- curr
+		}
+
+		previousValues = curr
+
+		time.Sleep(time.Second/time.Duration(clk) - time.Now().Sub(start))
+	}
 }
