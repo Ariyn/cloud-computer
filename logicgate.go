@@ -73,15 +73,6 @@ func (e Element) String() string {
 	return strings.Join(es, ".")
 }
 
-func (e Element) IsValidPart() (err error) {
-	// TODO: not enough validation
-	if e.Part == "i1" || e.Part == "i2" || e.Part == "1" || e.Part == "2" || e.Part == "o1" {
-		return nil
-	}
-
-	return InvalidElement
-}
-
 func (e Element) Bash() string {
 	name := e.String()
 
