@@ -1,14 +1,11 @@
 package main
 
 import (
-	"flag"
 	cc "github.com/ariyn/cloud-computer"
 	"log"
 )
 
 func main() {
-	flag.Parse()
-
 	name := cc.Name
 
 	log.Println("start")

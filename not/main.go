@@ -1,13 +1,10 @@
 package main
 
 import (
-	"flag"
 	cc "github.com/ariyn/cloud-computer"
 )
 
 func main() {
-	flag.Parse()
-
 	name := cc.Name
 	if name == "" {
 		name = "not"

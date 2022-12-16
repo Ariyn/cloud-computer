@@ -3,9 +3,9 @@ package cloud_computer
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -25,15 +25,32 @@ func (asf *ArrayStringFlag) Set(v string) error {
 
 var Inputs ArrayStringFlag
 var Name string
-var GroupName string
 
 func init() {
-	flag.StringVar(&Name, "name", "", "and, or, not, etc...")
+	//flag.StringVar(&Name, "name", "", "and, or, not, etc...")
 	//flag.StringVar(&InputName1, "i1", "input_1", "input_1")
 	//flag.StringVar(&InputName2, "i2", "input_2", "input_2")
-	flag.Var(&Inputs, "inputs", "inputs. first input will be set to input 1\neg) -inputs a.o1 -inputs b.o1")
+	//flag.Var(&Inputs, "inputs", "inputs. first input will be set to input 1\neg) -inputs a.o1 -inputs b.o1")
+
+	parseArguments()
 
 	InvalidElement = errors.New("invalid element")
+}
+
+func parseArguments() {
+	for index := 1; index < len(os.Args); index++ {
+		arg := os.Args[index]
+		if !strings.HasPrefix(arg, "-") {
+			continue
+		}
+
+		if strings.HasPrefix(arg, "-i") {
+			log.Println(arg, os.Args[index+1])
+			Inputs = append(Inputs, os.Args[index+1])
+		} else if arg == "-name" {
+			Name = os.Args[index+1]
+		}
+	}
 }
 
 // type BoolHandler func(prev, curr bool) (o bool)
@@ -70,8 +87,9 @@ func (e Element) Bash() string {
 
 	if name[0] == '$' && 7 <= len(name) && name[1:7] == "inputs" {
 		name = fmt.Sprintf("${i%s}", strings.ReplaceAll(name, "$inputs.", ""))
+		return name
 	}
-	log.Println(name)
+
 	return fmt.Sprintf("${name_variable}%s", name)
 }
 
@@ -90,7 +108,6 @@ func parseElement(words ...string) Element {
 	return e
 }
 
-// inputs = []string {"xor1.o1", "sum"}
 func ParseInputs(inputs ...string) (elements []Element) {
 	for _, i := range inputs {
 		words := strings.Split(i, ".")
