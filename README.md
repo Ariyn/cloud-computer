@@ -20,7 +20,7 @@ So you can make distributed cpu.
 ```bash
 > git clone github.com/ariyn/cloud-computer
 > cd cloud-computer
-> util/build
+> util/build.sh
 ```
 
 ## How to build
