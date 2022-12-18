@@ -6,3 +6,4 @@ go build -o bin/and ./and
 go build -o bin/xor ./xor
 go build -o "bin/alias" "./alias"
 go build -o bin/clock ./clock
+go build -o bin/flipflop ./flipflop
