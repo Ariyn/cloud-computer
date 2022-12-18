@@ -10,10 +10,11 @@ inputs {size}
 # you can use inputs command once for single file
 # if no inputs, default size is 2
 
-define {name} {logic gate} {input size} {output size}
+define {name} {logic gate} {input size} {output size} [no-optimization]
 # input_size of inputs will be created.
 # each inputs will be named as i1, i2, i3...
 # output is same but o1, o2, o3...
+# "no-optimization" parameter is optional. When you use "no-optimization", gates will publish their outputs even it ditn't changed.
 
 define {name} {Logical logic gates Group}
 # you can define another LG, except it self.
@@ -23,20 +24,20 @@ define {name} {Logical logic gates Group}
 # there is no output in LG. you can export names which output or alias
 
 # can access to specific input or output with dot
-# ex) logic_gate1.i1, and1.o2
+# ex) logic_gate1.i1, and1.o2, other_lg.output
 
-connect {input or output} {other input or output}
+connect {input or output} {other input or output or static value}
 
 # connect will connect 2 input or output
 # if first one is input, second should be output and vice versa.
 # connect can occur infinite loop or oscillation, be careful.
 
-alias {unique name} {input or output}
+# For default inputs, you can use "$inputs.{i}"
+
+# If you use 0 or 1 for static value, that will be fixed value. 
+
+alias {unique name} {input or output or static value}
 # alias for specific input or output, which is just sugar syntax
 # name should be unique in single ll file
 
-export {name}
-
-# TODO
-# file name will be group.
-# if you want to access to other logical logic gates
+# you can also access other LG's alias.
