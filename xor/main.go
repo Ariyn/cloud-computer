@@ -17,7 +17,7 @@ func main() {
 	outputs := cc.CreateOutputs(1)
 
 	err := cc.RunRedis(func(inputs ...bool) (results []bool) {
-		results[0] = inputs[0]
+		results = append(results, inputs[0])
 		for _, b := range inputs[1:] {
 			results[0] = results[0] != b
 		}

@@ -14,7 +14,7 @@ func main() {
 	outputs := cc.CreateOutputs(1)
 
 	err := cc.RunRedis(func(i ...bool) (results []bool) {
-		results[0] = !i[0]
+		results = append(results, !i[0])
 		return
 	}, name, inputs, outputs, cc.UseOptimization)
 	if err != nil {
