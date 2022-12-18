@@ -13,8 +13,9 @@ func main() {
 	inputs := cc.ParseInputs(cc.Inputs...)
 	outputs := cc.CreateOutputs(1)
 
-	err := cc.RunRedis(func(i ...bool) bool {
-		return !i[0]
+	err := cc.RunRedis(func(i ...bool) (results []bool) {
+		results[0] = !i[0]
+		return
 	}, name, inputs, outputs, cc.UseOptimization)
 	if err != nil {
 		panic(err)

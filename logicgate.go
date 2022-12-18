@@ -58,7 +58,7 @@ func parseArguments() {
 }
 
 // type BoolHandler func(prev, curr bool) (o bool)
-type BoolHandler func(inputs ...bool) (o bool)
+type BoolHandler func(inputs ...bool) (o []bool)
 
 // TODO: merge this and parse.Element
 type Element struct {
@@ -143,23 +143,18 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
 	}
 
-	outputs := make([]chan<- bool, 0)
+	outputChannels := make([]chan<- bool, 0)
 	for _, element := range outputElements {
 		element.GateName = name
-		outputs = append(outputs, writeAsyncRedis(ctx, client, element.String()))
+		outputChannels = append(outputChannels, writeAsyncRedis(ctx, client, element.String()))
 	}
 
 	previousValues := make([]bool, len(inputs))
-	previousOutput := false
+	previousOutputs := make([]bool, len(inputs))
 
-	output := handler(previousValues...)
-	err = writeRedis(ctx, client, name+".status", output)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, ch := range outputs {
-		ch <- output
+	outputs := handler(previousValues...)
+	for i, ch := range outputChannels {
+		ch <- outputs[i]
 	}
 
 	cases := make([]reflect.SelectCase, 0)
@@ -178,24 +173,33 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 
 		previousValues[index] = value.Bool()
 
-		output := handler(previousValues...)
-		if useShortcut && previousOutput == output {
+		outputs := handler(previousValues...)
+		if useShortcut && equalOutputs(previousOutputs, outputs) {
 			continue
 		}
 
-		err = writeRedis(ctx, client, name+".status", output)
-		if err != nil {
-			panic(err)
+		for i, ch := range outputChannels {
+			ch <- outputs[i]
 		}
 
-		for _, ch := range outputs {
-			ch <- output
-		}
-
-		previousOutput = output
+		previousOutputs = outputs
 	}
 
 	return nil
+}
+
+func equalOutputs(v1, v2 []bool) bool {
+	if len(v1) != len(v2) {
+		return false
+	}
+
+	for i := range v1 {
+		if v1[i] != v2[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func Clock(clk int, outputElements []Element) (err error) {

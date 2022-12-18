@@ -51,6 +51,11 @@ func writeAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 			if intCmd.Err() != nil {
 				panic(intCmd.Err())
 			}
+
+			err := writeRedis(ctx, client, name+".status", s)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}(client, name)
 
