@@ -235,7 +235,7 @@ type definition struct {
 
 func (def *definition) Bash() string {
 	child := ""
-	if !(def.typ == "and" || def.typ == "or" || def.typ == "not" || def.typ == "xor") {
+	if !(def.typ == "and" || def.typ == "or" || def.typ == "not" || def.typ == "xor" || def.typ == "flipflop") {
 		child = "-child"
 	}
 
