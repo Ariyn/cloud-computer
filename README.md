@@ -23,40 +23,53 @@ So you can make distributed cpu.
 > util/build
 ```
 
+## How to build
+
+pass .ll script path to parser.
+parser will print bash scripts to stdout.
+
+```bash
+/cloud-computer > go run ./parser -file half-adder.ll > bin/half-adder
+```
+
 ## How to run
 
-This code will run sample [half-adder](https://en.wikipedia.org/wiki/Adder_(electronics)#:~:text=%5Bedit%5D-,Half%20adder%5Bedit%5D,-Half%20adder%20logic)
+This code will run sample [half-adder](https://en.wikipedia.org/wiki/Adder_(electronics)#:~:text=%5Bedit%5D-,Half%20adder%5Bedit%5D,-Half%20adder%20logic).
+
 You need 3 different terminals for now.
-"watch outputs", "set input", "run program" will run on different terminal
+"watch outputs", "input", "run program" runs on different terminals.
 
 Terminal 1
 ```bash
-/cloud-computer > half-adder/run.sh
+/cloud-computer > bin/half-adder -name ha
 ```
 
 Terminal 2
 ```bash
-/cloud-computer > go run ./watcher -names xor_output_1 -names and_output_1
-# xor_output_1 means Sum
-# and_output_1 means Carry
+/cloud-computer > go run ./watcher -names ha.sum -names ha.carry
+# carry and sum is defined in half-adder.ll and compiled into bash script
 ```
 
 Terminal 3
 ```bash
 /cloud-computer > redis-cli
-127.0.0.1:6379> publish input_1 1
-# xor_output_1 = 1, and_output_1 = 0
+127.0.0.1:6379> publish ha.inputs.1 1
+# ha.sum = 1, ha.carry = 0
 
-127.0.0.1:6379> publish input_1 0
-# xor_output_1 = 0, and_output_1 = 0
+127.0.0.1:6379> publish ha.inputs.1 0
+# ha.sum = 0, ha.carry = 0
 
-127.0.0.1:6379> publish input_1 1
-127.0.0.1:6379> publish input_2 1
-# xor_output_0 = 0, and_output_1 = 1
+127.0.0.1:6379> publish ha.inputs.2 1
+# ha.sum = 1, ha.carry = 0
+127.0.0.1:6379> publish ha.inputs.1 1
+# ha.sum = 0, ha.carry = 1
 ```
 
 ## Next things
 
 - [x] group by name
 - [ ] control config with file
-- [ ] make more comfortable with creating large circuit
+- [ ] make more comfortable tools to create large circuit
+  - [ ] gate dump
+  - [ ] more comfortable watcher
+  - [ ] more comfortable input controller
