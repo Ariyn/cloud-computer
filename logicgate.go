@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -62,10 +63,12 @@ type BoolHandler func(inputs ...bool) (o []bool)
 
 // TODO: merge this and parse.Element
 type Element struct {
-	GateName    string
-	Part        string
-	IsAlias     bool
-	IsParameter bool
+	GateName      string
+	Part          string
+	IsAlias       bool
+	IsParameter   bool
+	StaticValue   bool
+	IsStaticValue bool
 }
 
 func (e Element) String() string {
@@ -80,6 +83,16 @@ func (e Element) String() string {
 func (e Element) Bash() string {
 	name := e.String()
 
+	if name == "" && e.IsStaticValue {
+		name = ""
+		if e.StaticValue == true {
+			name = "1"
+		} else {
+			name = "0"
+		}
+		return name
+	}
+
 	if name[0] == '$' && 7 <= len(name) && name[1:7] == "inputs" {
 		name = fmt.Sprintf("${i%s}", strings.ReplaceAll(name, "$inputs.", ""))
 		return name
@@ -89,6 +102,20 @@ func (e Element) Bash() string {
 }
 
 func parseElement(words ...string) Element {
+	if n, err := strconv.Atoi(words[0]); err == nil {
+		e := Element{
+			IsStaticValue: true,
+		}
+
+		if n == 0 {
+			e.StaticValue = false
+		} else {
+			e.StaticValue = true
+		}
+
+		return e
+	}
+
 	e := Element{
 		GateName: strings.Join(words, "."),
 	}
@@ -137,9 +164,15 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 	defer deleteRedis(ctx, client, name+".status")
 
+	previousValues := make([]bool, len(inputElements))
+	previousOutputs := make([]bool, len(inputElements))
+
 	inputs := make([]<-chan bool, 0)
-	for _, element := range inputElements {
-		log.Println("input id", element.String())
+	for i, element := range inputElements {
+		if element.IsStaticValue {
+			previousValues[i] = element.StaticValue
+			continue
+		}
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
 	}
 
@@ -148,9 +181,6 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		element.GateName = name
 		outputChannels = append(outputChannels, writeAsyncRedis(ctx, client, element.String()))
 	}
-
-	previousValues := make([]bool, len(inputs))
-	previousOutputs := make([]bool, len(inputs))
 
 	outputs := handler(previousValues...)
 	for i, ch := range outputChannels {

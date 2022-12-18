@@ -131,7 +131,7 @@ func parse(script string) (bash string, err error) {
 				return bash, err
 			}
 			if _, ok := commandsByName[e2.GateName]; !ok {
-				if !e2.IsParameter {
+				if !(e2.IsParameter || e2.IsStaticValue) {
 					err = cc.InvalidElement
 					log.Println(e2.GateName)
 					panic(err)
@@ -270,6 +270,17 @@ func parseElement(word string) (element cc.Element, err error) {
 		element.GateName = word
 		element.IsParameter = true
 		return
+	}
+
+	if n, err := strconv.Atoi(word); err == nil {
+		element.IsStaticValue = true
+		if n == 0 {
+			element.StaticValue = false
+		} else {
+			element.StaticValue = true
+		}
+		log.Println(word, "skipping")
+		return element, nil
 	}
 
 	elements := strings.Split(word, ".")
