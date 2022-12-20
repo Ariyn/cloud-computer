@@ -1,0 +1,8 @@
+#!/bin/bash
+
+ll_file=$1
+name=$(basename -s .ll $1)
+
+echo $ll_file $name
+bin/parser -file $ll_file > "bin/$name"
+chmod 755 "bin/$name"
