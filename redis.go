@@ -37,7 +37,7 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 	return sChannel
 }
 
-func writeAsyncRedis(ctx context.Context, client *redis.Client, name string) (status chan<- bool) {
+func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (status chan<- bool) {
 	sChannel := make(chan bool, 1)
 
 	go func(client *redis.Client, name string) {

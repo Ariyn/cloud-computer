@@ -26,6 +26,7 @@ func (asf *ArrayStringFlag) Set(v string) error {
 }
 
 var Inputs ArrayStringFlag
+var Outputs ArrayStringFlag
 var Name string
 var UseOptimization bool = true
 
@@ -48,12 +49,18 @@ func parseArguments() {
 		}
 
 		if strings.HasPrefix(arg, "-i") {
+			// TODO: -i 뒤의 숫자를 파싱해서 해당 번호에 넣기
 			log.Println(arg, os.Args[index+1])
 			Inputs = append(Inputs, os.Args[index+1])
+			index += 1
 		} else if arg == "-name" {
 			Name = os.Args[index+1]
 		} else if arg == "-no-optimization" {
 			UseOptimization = false
+		} else if strings.HasPrefix(arg, "-o") {
+			// TODO: -o 뒤의 숫자를 파싱해서 해당 번호에 넣기
+			Outputs = append(Outputs, os.Args[index+1])
+			index += 1
 		}
 	}
 }
@@ -176,10 +183,11 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
 	}
 
+	// TODO: inputs와 이름의 차이가 큼. 수정할 것
 	outputChannels := make([]chan<- bool, 0)
 	for _, element := range outputElements {
 		element.GateName = name
-		outputChannels = append(outputChannels, writeAsyncRedis(ctx, client, element.String()))
+		outputChannels = append(outputChannels, WriteAsyncRedis(ctx, client, element.String()))
 	}
 
 	outputs := handler(previousValues...)
@@ -249,7 +257,7 @@ func Clock(clk int, outputElements []Element) (err error) {
 	outputs := make([]chan<- bool, 0)
 	for _, element := range outputElements {
 		element.GateName = name
-		outputs = append(outputs, writeAsyncRedis(ctx, client, element.String()))
+		outputs = append(outputs, WriteAsyncRedis(ctx, client, element.String()))
 	}
 
 	previousValues := false
