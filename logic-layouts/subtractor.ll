@@ -5,6 +5,8 @@ define a2 full-adder 3 2
 define a3 full-adder 3 2
 define a4 full-adder 3 2
 
+# 여기서 빅 엔디안? 리틀 엔디안? 이거 확실하게 정해줄 것
+# 이 회로는 A-B인가? B-A인가? 확실하게 정할 것
 connect a1.i1 $inputs.1
 connect a2.i1 $inputs.2
 connect a3.i1 $inputs.3
