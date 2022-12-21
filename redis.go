@@ -14,6 +14,7 @@ func ConnectRedis() *redis.Client {
 	})
 }
 
+// TODO: rename Read to Subscribe
 func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (status <-chan bool) {
 	sChannel := make(chan bool, 1)
 
@@ -37,6 +38,7 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 	return sChannel
 }
 
+// TODO: rename Write to Publish
 func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (status chan<- bool) {
 	sChannel := make(chan bool, 1)
 
@@ -52,6 +54,7 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 				panic(intCmd.Err())
 			}
 
+			// TODO: output의 값이 status에 덮어씌여지고 있음
 			err := writeRedis(ctx, client, name+".status", s)
 			if err != nil {
 				panic(err)

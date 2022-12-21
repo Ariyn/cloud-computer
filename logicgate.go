@@ -25,10 +25,13 @@ func (asf *ArrayStringFlag) Set(v string) error {
 	return nil
 }
 
+const DebugChannelName = "CLOUD_COMPUTER_DEBUG"
+
 var Inputs ArrayStringFlag
 var Outputs ArrayStringFlag
 var Name string
 var UseOptimization bool = true
+var IsDebugging bool
 
 func init() {
 	//flag.StringVar(&Name, "name", "", "and, or, not, etc...")
@@ -61,6 +64,9 @@ func parseArguments() {
 			// TODO: -o 뒤의 숫자를 파싱해서 해당 번호에 넣기
 			Outputs = append(Outputs, os.Args[index+1])
 			index += 1
+		} else if arg == "-debug" {
+			IsDebugging = true
+			log.Println("RUNNING DEBUGGING MODE")
 		}
 	}
 }
@@ -183,6 +189,8 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
 	}
 
+	debugInput := ReadAsyncRedis(ctx, client, DebugChannelName)
+
 	// TODO: inputs와 이름의 차이가 큼. 수정할 것
 	outputChannels := make([]chan<- bool, 0)
 	for _, element := range outputElements {
@@ -190,6 +198,7 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		outputChannels = append(outputChannels, WriteAsyncRedis(ctx, client, element.String()))
 	}
 
+	// TODO: 여기서 문제가 없을지 확인 필요하다. 과연...
 	outputs := handler(previousValues...)
 	for i, ch := range outputChannels {
 		ch <- outputs[i]
@@ -214,6 +223,16 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		outputs := handler(previousValues...)
 		if useShortcut && equalOutputs(previousOutputs, outputs) {
 			continue
+		}
+
+		// WARN: 임시 코드. 좀 더 우아하게 수정할 것
+		err = writeRedis(ctx, client, name+".status", outputs[0])
+		if err != nil {
+			panic(err)
+		}
+
+		if IsDebugging {
+			<-debugInput
 		}
 
 		for i, ch := range outputChannels {
