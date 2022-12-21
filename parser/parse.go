@@ -181,6 +181,7 @@ while (( $# )); do
     -name) name=$2;shift; ;;
     -child) child=1; ;;
     -no-optimization) ;;
+    -debug) debug=$2; shift;;
 
 {input_parameters}
 
@@ -250,7 +251,7 @@ func (def *definition) Bash() string {
 	if def.noOptimization {
 		noOptimization = "-no-optimization"
 	}
-	return fmt.Sprintf(`%s %s -name "${name_variable}%s" %s %s`, def.bin, noOptimization, def.name, child, inputArgument)
+	return fmt.Sprintf(`%s %s -name "${name_variable}%s" -debug "${debug}" %s %s`, def.bin, noOptimization, def.name, child, inputArgument)
 }
 
 func parseDefine(name, typ string, inputSize, outputSize int, noOptimization bool) (def definition) {

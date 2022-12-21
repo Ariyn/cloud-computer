@@ -65,8 +65,11 @@ func parseArguments() {
 			Outputs = append(Outputs, os.Args[index+1])
 			index += 1
 		} else if arg == "-debug" {
-			IsDebugging = true
-			log.Println("RUNNING DEBUGGING MODE")
+			if os.Args[index+1] == "1" {
+				IsDebugging = true
+				log.Println("RUNNING DEBUGGING MODE")
+			}
+			index += 1
 		}
 	}
 }
@@ -205,6 +208,13 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	cases := make([]reflect.SelectCase, 0)
+	if IsDebugging {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(debugInput),
+		})
+	}
+
 	for _, ch := range inputs {
 		cases = append(cases, reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
@@ -218,6 +228,23 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 			break
 		}
 
+		if IsDebugging {
+			if index == 0 {
+				outputs := handler(previousValues...)
+				if useShortcut && equalOutputs(previousOutputs, outputs) {
+					continue
+				}
+
+				for i, ch := range outputChannels {
+					ch <- outputs[i]
+				}
+
+				previousOutputs = outputs
+				continue
+			}
+
+			index -= 1
+		}
 		previousValues[index] = value.Bool()
 
 		outputs := handler(previousValues...)
@@ -231,15 +258,18 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 			panic(err)
 		}
 
-		if IsDebugging {
-			<-debugInput
-		}
+		if !IsDebugging {
+			outputs := handler(previousValues...)
+			if useShortcut && equalOutputs(previousOutputs, outputs) {
+				continue
+			}
 
-		for i, ch := range outputChannels {
-			ch <- outputs[i]
-		}
+			for i, ch := range outputChannels {
+				ch <- outputs[i]
+			}
 
-		previousOutputs = outputs
+			previousOutputs = outputs
+		}
 	}
 
 	return nil

@@ -18,7 +18,7 @@ func ConnectRedis() *redis.Client {
 func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (status <-chan bool) {
 	sChannel := make(chan bool, 1)
 
-	log.Println("running read async redis")
+	log.Println("running read async redis", name)
 	sub := client.Subscribe(name)
 	go func(sub *redis.PubSub) {
 		defer sub.Close()
