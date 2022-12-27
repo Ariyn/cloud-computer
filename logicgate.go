@@ -192,8 +192,6 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
 	}
 
-	debugInput := ReadAsyncRedis(ctx, client, DebugChannelName)
-
 	// TODO: inputs와 이름의 차이가 큼. 수정할 것
 	outputChannels := make([]chan<- bool, 0)
 	for _, element := range outputElements {
@@ -209,6 +207,8 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 
 	cases := make([]reflect.SelectCase, 0)
 	if IsDebugging {
+		debugInput := ReadAsyncRedis(ctx, client, DebugChannelName)
+
 		cases = append(cases, reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
 			Chan: reflect.ValueOf(debugInput),
