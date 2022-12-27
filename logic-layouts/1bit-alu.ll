@@ -4,6 +4,11 @@
 # there would be 2 outputs for output and carry out.
 inputs 5
 
+# opcode 0 = A and B
+# opcode 1 = A or B
+# opcode 2 = not A
+# opcode 3 = A + B + (if exists) carry
+
 define result or 4 1
 
 define selector 2bit-decoder 2 4

@@ -9,6 +9,7 @@ define a4 and 2 1 no-optimization
 
 define selector-not1-1 not 1 1 no-optimization
 connect selector-not1-1.i1 $inputs.1
+
 define selector-not2-1 not 1 1 no-optimization
 connect selector-not2-1.i1 $inputs.2
 
