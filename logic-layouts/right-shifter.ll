@@ -1,4 +1,4 @@
-inputs 5
+inputs 4
 
 alias o1 $inputs.2
 alias o2 $inputs.3
