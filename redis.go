@@ -25,7 +25,7 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 		defer sub.Unsubscribe(name)
 
 		for msg := range sub.Channel() {
-			fmt.Printf("message at channel %s = %s\n", msg.Channel, msg.Payload)
+			//fmt.Printf("message at channel %s = %s\n", msg.Channel, msg.Payload)
 
 			if msg.Payload == "1" {
 				sChannel <- true
@@ -48,6 +48,8 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 			if s {
 				data = 1
 			}
+
+			fmt.Printf("message at channel %s = %v\n", name, s)
 
 			intCmd := client.Publish(name, data)
 			if intCmd.Err() != nil {
