@@ -22,14 +22,14 @@ connect selector-not2-2.i1 selector-not2-1.o1
 connect a1.i1 selector-not1-1.o1
 connect a1.i2 selector-not2-1.o1
 
-connect a2.i1 selector-not1-2.o1
+connect a2.i1 $inputs.1
 connect a2.i2 selector-not2-1.o1
 
 connect a3.i1 selector-not1-1.o1
-connect a3.i2 selector-not2-2.o1
+connect a3.i2 $inputs.2
 
-connect a4.i1 selector-not1-2.o1
-connect a4.i2 selector-not2-2.o1
+connect a4.i1 $inputs.1
+connect a4.i2 $inputs.2
 
 alias o1 a1.o1
 alias o2 a2.o1
