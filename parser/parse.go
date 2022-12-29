@@ -99,8 +99,13 @@ func parse(script string) (bash string, err error) {
 				return bash, err
 			}
 
+			if len(words) <= 4 {
+				log.Println("Wrong define", strings.Join(words, " "))
+				panic("wrong")
+			}
 			outputSize, err := strconv.Atoi(words[4])
 			if err != nil {
+				log.Println("Wrong define", strings.Join(words, " "))
 				panic(err)
 				return bash, err
 			}
@@ -317,6 +322,15 @@ type Alias struct {
 
 func (a Alias) Bash() string {
 	target := a.Target.String()
+
+	if target == "" && a.Target.IsStaticValue {
+		if a.Target.StaticValue == true {
+			target = "1"
+		} else {
+			target = "0"
+		}
+		return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -i1 "%s"`, a.Name, target)
+	}
 
 	if target[0] == '$' && 7 <= len(target) && target[1:7] == "inputs" {
 		target = fmt.Sprintf("${i%s}", strings.ReplaceAll(target, "$inputs.", ""))
