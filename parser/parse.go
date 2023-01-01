@@ -171,6 +171,10 @@ func parse(script string) (bash string, err error) {
 	delete(commandsByName, "inputs")
 
 	bashLines := make([]string, 0)
+	for i := 0; i < inputSize; i++ {
+		bashLines = append(bashLines, fmt.Sprintf("bin/input -name \"${name_variable}i%d\" -debug \"${debug}\"  -i1 \"${i%d}\"", i+1, i+1))
+	}
+
 	for _, cmd := range commandsByName {
 		//log.Println(cmd.Bash())
 		bashLines = append(bashLines, cmd.Bash())
