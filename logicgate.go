@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis"
 	"log"
 	"os"
+	"os/signal"
 	"reflect"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -32,6 +35,7 @@ var Outputs ArrayStringFlag
 var Name string
 var UseOptimization bool = true
 var IsDebugging bool
+var Client redis.Conn
 
 func init() {
 	//flag.StringVar(&Name, "name", "", "and, or, not, etc...")
@@ -168,7 +172,7 @@ func CreateOutputs(size int) (elements []Element) {
 	return
 }
 
-func RunRedis(handler BoolHandler, name string, inputElements []Element, outputElements []Element, useShortcut bool) (err error) {
+func RunRedis(handler BoolHandler, name string, inputElements []Element, outputElements []Element, useShortcut bool, isAlias, isInput bool) (err error) {
 	log.Println(handler, name, inputElements, outputElements)
 
 	ctx := context.TODO()
@@ -178,7 +182,10 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	if err != nil {
 		panic(err)
 	}
-	defer deleteRedis(ctx, client, name+".status")
+
+	if isInput {
+		addInput(client, name, name+".status")
+	}
 
 	previousValues := make([]bool, len(inputElements))
 	previousOutputs := make([]bool, len(inputElements))
@@ -190,6 +197,10 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 			continue
 		}
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
+	}
+
+	if isAlias {
+		addOutput(client, name, name+".status")
 	}
 
 	// TODO: inputs와 이름의 차이가 큼. 수정할 것
@@ -222,9 +233,35 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		})
 	}
 
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	cases = append(cases, reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: reflect.ValueOf(sigs),
+	})
+
 	for {
 		index, value, ok := reflect.Select(cases)
 		if !ok {
+			break
+		}
+
+		if index == len(cases)-1 {
+			deleteRedis(ctx, client, name+".status")
+			for _, element := range outputElements {
+				element.GateName = name
+				deleteRedis(ctx, client, element.String()+".status")
+			}
+
+			if isInput {
+				parents := strings.Split(name, ".")
+				deleteRedis(ctx, client, parents[0]+".inputs")
+			}
+			if isAlias {
+				parents := strings.Split(name, ".")
+				deleteRedis(ctx, client, parents[0]+".outputs")
+			}
 			break
 		}
 

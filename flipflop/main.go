@@ -29,7 +29,7 @@ func main() {
 
 		previousStatus = currentStatus
 		return []bool{currentStatus, !currentStatus}
-	}, name, inputs, outputs, cc.UseOptimization)
+	}, name, inputs, outputs, cc.UseOptimization, false, false)
 	if err != nil {
 		panic(err)
 	}

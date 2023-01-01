@@ -23,7 +23,7 @@ func main() {
 			results[0] = results[0] || b
 		}
 		return
-	}, name, inputs, outputs, cc.UseOptimization)
+	}, name, inputs, outputs, cc.UseOptimization, false, false)
 	if err != nil {
 		panic(err)
 	}

@@ -2,9 +2,8 @@ package cloud_computer
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-redis/redis"
-	"log"
+	"strings"
 )
 
 func ConnectRedis() *redis.Client {
@@ -18,7 +17,7 @@ func ConnectRedis() *redis.Client {
 func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (status <-chan bool) {
 	sChannel := make(chan bool, 1)
 
-	log.Println("running read async redis", name)
+	//log.Println("running read async redis", name)
 	sub := client.Subscribe(name)
 	go func(sub *redis.PubSub) {
 		defer sub.Close()
@@ -38,6 +37,13 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 	return sChannel
 }
 
+func addInput(client *redis.Client, gateName, name string) {
+	//client.SAdd(gateName+".inputs", name)
+
+	parents := strings.Split(gateName, ".")
+	client.SAdd(parents[0]+".inputs", name)
+}
+
 // TODO: rename Write to Publish
 func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (status chan<- bool) {
 	sChannel := make(chan bool, 1)
@@ -49,7 +55,7 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 				data = 1
 			}
 
-			fmt.Printf("message at channel %s = %v\n", name, s)
+			//fmt.Printf("message at channel %s = %v\n", name, s)
 
 			intCmd := client.Publish(name, data)
 			if intCmd.Err() != nil {
@@ -67,6 +73,12 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 	return sChannel
 }
 
+func addOutput(client *redis.Client, gateName, name string) {
+	//client.SAdd(gateName+".outputs", name)
+
+	parents := strings.Split(gateName, ".")
+	client.SAdd(parents[0]+".outputs", name)
+}
 func writeRedis(ctx context.Context, client *redis.Client, name string, value bool) (err error) {
 	return client.Set(name, value, 0).Err()
 }
