@@ -184,7 +184,7 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	if isInput {
-		addInput(client, name, name+".status")
+		addInput(client, name, name)
 	}
 
 	previousValues := make([]bool, len(inputElements))
@@ -200,7 +200,7 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	if isAlias {
-		addOutput(client, name, name+".status")
+		addOutput(client, name, name)
 	}
 
 	// TODO: inputs와 이름의 차이가 큼. 수정할 것
@@ -296,11 +296,6 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		}
 
 		if !IsDebugging {
-			outputs := handler(previousValues...)
-			if useShortcut && equalOutputs(previousOutputs, outputs) {
-				continue
-			}
-
 			for i, ch := range outputChannels {
 				ch <- outputs[i]
 			}

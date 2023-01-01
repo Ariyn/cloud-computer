@@ -11,13 +11,15 @@ func main() {
 		name = "input"
 	}
 
-	log.Println("start")
-
 	inputs := cc.ParseInputs(cc.Inputs...)
+	e := cc.Element{
+		GateName: name,
+	}
 
+	log.Println("input", inputs)
 	err := cc.RunRedis(func(inputs ...bool) (results []bool) {
-		return
-	}, name, inputs, nil, cc.UseOptimization, false, true)
+		return inputs
+	}, name, inputs, []cc.Element{e}, false, false, true)
 	if err != nil {
 		panic(err)
 	}

@@ -6,36 +6,62 @@ import (
 	cc "github.com/ariyn/cloud-computer"
 	"log"
 	"reflect"
-	"strings"
+	"sort"
 )
 
-type arrayFlags []string
-
-func (af *arrayFlags) String() string {
-	return strings.Join(*af, "\n")
-}
-
-func (af *arrayFlags) Set(value string) error {
-	*af = append(*af, value)
-	return nil
-}
-
-var watches arrayFlags
+// type arrayFlags []string
+//
+//	func (af *arrayFlags) String() string {
+//		return strings.Join(*af, "\n")
+//	}
+//
+//	func (af *arrayFlags) Set(value string) error {
+//		*af = append(*af, value)
+//		return nil
+//	}
+//
+// var watches arrayFlags
+var name string
+var input bool
+var output bool
 
 func init() {
-	flag.Var(&watches, "names", "names for watch")
+	//flag.Var(&watches, "names", "names for watch")
+	flag.StringVar(&name, "name", "", "name for watch")
+	flag.BoolVar(&input, "I", false, "isInput")
+	flag.BoolVar(&output, "O", false, "isOutput")
 }
 
 // TODO: 이부분 RunRedis와 거의 동일함. 추상화 할 방법 찾아보기
 func main() {
 	flag.Parse()
+	if input && output {
+		panic("input and output can not be both set")
+	}
 
 	log.Println("running")
 	client := cc.ConnectRedis()
 	log.Println("connected")
 
+	memberName := name
+	if input {
+		memberName += ".inputs"
+	}
+	if output {
+		memberName += ".outputs"
+	}
+	watches, err := client.SMembers(memberName).Result()
+	if err != nil {
+		panic(err)
+	}
+
+	sort.Slice(watches, func(i, j int) bool {
+		return watches[i] < watches[j]
+	})
+
 	inputs := make([]<-chan bool, 0)
 	for _, name := range watches {
+		log.Println(name)
 		inputs = append(inputs, cc.ReadAsyncRedis(context.TODO(), client, name))
 	}
 
