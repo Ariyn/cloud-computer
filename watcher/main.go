@@ -6,7 +6,9 @@ import (
 	cc "github.com/ariyn/cloud-computer"
 	"log"
 	"reflect"
+	"regexp"
 	"sort"
+	"strconv"
 )
 
 // type arrayFlags []string
@@ -25,11 +27,15 @@ var name string
 var input bool
 var output bool
 
+var nameRegex *regexp.Regexp
+
 func init() {
 	//flag.Var(&watches, "names", "names for watch")
 	flag.StringVar(&name, "name", "", "name for watch")
 	flag.BoolVar(&input, "I", false, "isInput")
 	flag.BoolVar(&output, "O", false, "isOutput")
+
+	nameRegex = regexp.MustCompile(`.+?\.[io](\d+)`)
 }
 
 // TODO: 이부분 RunRedis와 거의 동일함. 추상화 할 방법 찾아보기
@@ -56,7 +62,9 @@ func main() {
 	}
 
 	sort.Slice(watches, func(i, j int) bool {
-		return watches[i] < watches[j]
+		first := findNumber(watches[i])
+		second := findNumber(watches[j])
+		return first < second
 	})
 
 	inputs := make([]<-chan bool, 0)
@@ -85,6 +93,20 @@ func main() {
 		printBits(previousValues)
 		//log.Printf("%d: %v", index, previousValues[index])
 	}
+}
+
+func findNumber(name string) int {
+	l := nameRegex.FindStringSubmatch(name)
+	if len(l) == 0 {
+		return -1
+	}
+
+	n, err := strconv.Atoi(l[1])
+	if err != nil {
+		return -1
+	}
+
+	return n
 }
 
 func printBits(bits []bool) {
