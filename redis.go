@@ -41,7 +41,7 @@ func addInput(client *redis.Client, gateName, name string) {
 	//client.SAdd(gateName+".inputs", name)
 
 	parents := strings.Split(gateName, ".")
-	client.SAdd(parents[0]+".inputs", name)
+	client.SAdd(strings.Join(parents[:len(parents)-1], ".")+".inputs", name)
 }
 
 // TODO: rename Write to Publish
@@ -77,7 +77,8 @@ func addOutput(client *redis.Client, gateName, name string) {
 	//client.SAdd(gateName+".outputs", name)
 
 	parents := strings.Split(gateName, ".")
-	client.SAdd(parents[0]+".outputs", name)
+	client.SAdd(strings.Join(parents[:len(parents)-1], ".")+".outputs", name)
+	//client.SAdd(parents[0]+".outputs", name)
 }
 func writeRedis(ctx context.Context, client *redis.Client, name string, value bool) (err error) {
 	return client.Set(name, value, 0).Err()

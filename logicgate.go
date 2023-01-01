@@ -256,11 +256,11 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 
 			if isInput {
 				parents := strings.Split(name, ".")
-				deleteRedis(ctx, client, parents[0]+".inputs")
+				deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+".inputs")
 			}
 			if isAlias {
 				parents := strings.Split(name, ".")
-				deleteRedis(ctx, client, parents[0]+".outputs")
+				deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+".outputs")
 			}
 			break
 		}
