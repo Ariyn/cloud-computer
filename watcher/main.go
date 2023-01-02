@@ -4,25 +4,27 @@ import (
 	"context"
 	"flag"
 	cc "github.com/ariyn/cloud-computer"
+	"github.com/go-redis/redis"
 	"log"
 	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 )
 
-// type arrayFlags []string
-//
-//	func (af *arrayFlags) String() string {
-//		return strings.Join(*af, "\n")
-//	}
-//
-//	func (af *arrayFlags) Set(value string) error {
-//		*af = append(*af, value)
-//		return nil
-//	}
-//
-// var watches arrayFlags
+type arrayFlags []string
+
+func (af *arrayFlags) String() string {
+	return strings.Join(*af, "\n")
+}
+
+func (af *arrayFlags) Set(value string) error {
+	*af = append(*af, value)
+	return nil
+}
+
+// var names arrayFlags
 var name string
 var input bool
 var output bool
@@ -30,12 +32,64 @@ var output bool
 var nameRegex *regexp.Regexp
 
 func init() {
-	//flag.Var(&watches, "names", "names for watch")
+	//flag.Var(&names, "names", "names for watch")
 	flag.StringVar(&name, "name", "", "name for watch")
-	flag.BoolVar(&input, "I", false, "isInput")
-	flag.BoolVar(&output, "O", false, "isOutput")
+	//flag.BoolVar(&input, "I", false, "isInput")
+	//flag.BoolVar(&output, "O", false, "isOutput")
 
 	nameRegex = regexp.MustCompile(`.+?\.[io](\d+)`)
+}
+
+type Watch struct {
+	Input  Watches
+	Output Watches
+}
+
+type Watches struct {
+	channels []<-chan bool
+	values   []bool
+}
+
+func (w *Watches) getCases() (cases []reflect.SelectCase) {
+	for _, ch := range w.channels {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ch),
+		})
+	}
+
+	return
+}
+
+func (w *Watches) setValue(index int, value bool) {
+	w.values[index] = value
+}
+
+func (w *Watches) Length() int {
+	return len(w.values)
+}
+
+func getWatches(client *redis.Client, name string) Watches {
+	w, err := client.SMembers(name).Result()
+	if err != nil {
+		panic(err)
+	}
+
+	sort.Slice(w, func(i, j int) bool {
+		first := findNumber(w[i])
+		second := findNumber(w[j])
+		return first < second
+	})
+
+	channels := make([]<-chan bool, 0)
+	for _, name := range w {
+		channels = append(channels, cc.ReadAsyncRedis(context.TODO(), client, name))
+	}
+
+	return Watches{
+		channels: channels,
+		values:   make([]bool, len(channels)),
+	}
 }
 
 // TODO: 이부분 RunRedis와 거의 동일함. 추상화 할 방법 찾아보기
@@ -49,48 +103,34 @@ func main() {
 	client := cc.ConnectRedis()
 	log.Println("connected")
 
-	memberName := name
-	if input {
-		memberName += ".inputs"
-	}
-	if output {
-		memberName += ".outputs"
-	}
-	watches, err := client.SMembers(memberName).Result()
-	if err != nil {
-		panic(err)
-	}
+	watches := make(map[string]Watch)
+	w := Watch{}
+	w.Input = getWatches(client, name+".inputs")
+	w.Output = getWatches(client, name+".outputs")
 
-	sort.Slice(watches, func(i, j int) bool {
-		first := findNumber(watches[i])
-		second := findNumber(watches[j])
-		return first < second
-	})
-
-	inputs := make([]<-chan bool, 0)
-	for _, name := range watches {
-		log.Println(name)
-		inputs = append(inputs, cc.ReadAsyncRedis(context.TODO(), client, name))
-	}
+	watches[name] = w
 
 	cases := make([]reflect.SelectCase, 0)
-	for _, ch := range inputs {
-		cases = append(cases, reflect.SelectCase{
-			Dir:  reflect.SelectRecv,
-			Chan: reflect.ValueOf(ch),
-		})
-	}
+	i := watches[name].Input
+	cases = append(cases, i.getCases()...)
 
-	previousValues := make([]bool, len(inputs))
+	o := watches[name].Output
+	cases = append(cases, o.getCases()...)
+
 	for {
 		index, value, ok := reflect.Select(cases)
 		if !ok {
 			break
 		}
 
-		previousValues[index] = value.Bool()
+		if index < i.Length() {
+			i.setValue(index, value.Bool())
+		} else {
+			o.setValue(index-i.Length(), value.Bool())
+		}
 
-		printBits(previousValues)
+		printBits("inputs", i.values)
+		printBits("outputs", o.values)
 		//log.Printf("%d: %v", index, previousValues[index])
 	}
 }
@@ -109,7 +149,7 @@ func findNumber(name string) int {
 	return n
 }
 
-func printBits(bits []bool) {
+func printBits(prefix string, bits []bool) {
 	l := ""
 	for i := range bits {
 		b := bits[len(bits)-i-1]
@@ -120,5 +160,5 @@ func printBits(bits []bool) {
 		}
 	}
 
-	log.Println(l)
+	log.Println(prefix, l)
 }
