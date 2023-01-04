@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
+	"fmt"
 	cc "github.com/ariyn/cloud-computer"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
+	"github.com/gosuri/uilive"
 	"log"
 	"reflect"
 	"regexp"
@@ -12,6 +15,11 @@ import (
 	"strconv"
 	"strings"
 )
+
+const ESC = 27
+
+var clear = fmt.Sprintf("%c[%dA%c[2K", ESC, 1, ESC)
+var isPrinted = false
 
 type arrayFlags []string
 
@@ -41,8 +49,13 @@ func init() {
 }
 
 type Watch struct {
-	Input  Watches
-	Output Watches
+	Input       *Watches
+	InputIndex  int
+	InputSize   int
+	Output      *Watches
+	OutputIndex int
+	OutputSize  int
+	Name        string
 }
 
 type Watches struct {
@@ -69,8 +82,8 @@ func (w *Watches) Length() int {
 	return len(w.values)
 }
 
-func getWatches(client *redis.Client, name string) Watches {
-	w, err := client.SMembers(name).Result()
+func getWatches(ctx context.Context, client *redis.Client, name string) *Watches {
+	w, err := client.SMembers(ctx, name).Result()
 	if err != nil {
 		panic(err)
 	}
@@ -86,11 +99,15 @@ func getWatches(client *redis.Client, name string) Watches {
 		channels = append(channels, cc.ReadAsyncRedis(context.TODO(), client, name))
 	}
 
-	return Watches{
+	return &Watches{
 		channels: channels,
 		values:   make([]bool, len(channels)),
 	}
 }
+
+var children []string
+
+var writer *uilive.Writer
 
 // TODO: 이부분 RunRedis와 거의 동일함. 추상화 할 방법 찾아보기
 func main() {
@@ -103,19 +120,44 @@ func main() {
 	client := cc.ConnectRedis()
 	log.Println("connected")
 
-	watches := make(map[string]Watch)
-	w := Watch{}
-	w.Input = getWatches(client, name+".inputs")
-	w.Output = getWatches(client, name+".outputs")
+	var err error
+	children, err = getChildren(client, name)
+	if err != nil {
+		log.Println("can't get children")
+		panic(err)
+	}
 
-	watches[name] = w
+	// TODO: need numeric sort
+	sort.Slice(children, func(i, j int) bool {
+		return children[i] < children[j]
+	})
+	log.Println(children)
+
+	watches := make([]Watch, 0)
+
+	index := 0
+	for _, c := range children {
+		w := Watch{}
+		w.Name = c
+		w.Input = getWatches(context.Background(), client, c+".inputs")
+		w.InputSize = w.Input.Length()
+		w.InputIndex = index
+
+		w.Output = getWatches(context.Background(), client, c+".outputs")
+		w.OutputSize = w.Output.Length()
+		w.OutputIndex = index + w.InputSize
+
+		watches = append(watches, w)
+		index += w.InputSize + w.OutputSize
+	}
+
+	printWatches(watches)
 
 	cases := make([]reflect.SelectCase, 0)
-	i := watches[name].Input
-	cases = append(cases, i.getCases()...)
-
-	o := watches[name].Output
-	cases = append(cases, o.getCases()...)
+	for _, w := range watches {
+		cases = append(cases, w.Input.getCases()...)  // even = inputs
+		cases = append(cases, w.Output.getCases()...) // odd = outputs
+	}
 
 	for {
 		index, value, ok := reflect.Select(cases)
@@ -123,16 +165,32 @@ func main() {
 			break
 		}
 
-		if index < i.Length() {
-			i.setValue(index, value.Bool())
-		} else {
-			o.setValue(index-i.Length(), value.Bool())
+		w, watchesIndex, err := getWatch(watches, index)
+		if err != nil {
+			log.Println("no such index", index)
+			panic(err)
 		}
 
-		printBits("inputs", i.values)
-		printBits("outputs", o.values)
-		//log.Printf("%d: %v", index, previousValues[index])
+		w.setValue(index-watchesIndex, value.Bool())
+		printWatches(watches)
 	}
+}
+
+func getWatch(watches []Watch, index int) (*Watches, int, error) {
+	for _, w := range watches {
+		if w.InputIndex <= index && index < (w.InputIndex+w.InputSize) {
+			return w.Input, w.InputIndex, nil
+		}
+		if w.OutputIndex <= index && index < (w.OutputIndex+w.OutputSize) {
+			return w.Output, w.OutputIndex, nil
+		}
+	}
+
+	return nil, 0, errors.New("No such watch index")
+}
+
+func getChildren(client *redis.Client, name string) (children []string, err error) {
+	return client.SMembers(context.Background(), name+".children").Result()
 }
 
 func findNumber(name string) int {
@@ -149,7 +207,60 @@ func findNumber(name string) int {
 	return n
 }
 
-func printBits(prefix string, bits []bool) {
+func printWatches(watches []Watch) {
+	if isPrinted {
+		for range watches {
+			fmt.Print(clear)
+		}
+	}
+
+	maximumSizes := make([]int, 4)
+	for _, w := range watches {
+		inputNameSize := len(w.Name) + 7
+		inputSize := w.InputSize
+		outputNameSize := len(w.Name) + 8
+		outputSize := w.OutputSize
+
+		if maximumSizes[0] < inputNameSize {
+			maximumSizes[0] = inputNameSize
+		}
+
+		if maximumSizes[1] < inputSize {
+			maximumSizes[1] = inputSize
+		}
+
+		if maximumSizes[2] < outputNameSize {
+			maximumSizes[2] = outputNameSize
+		}
+
+		if maximumSizes[3] < outputSize {
+			maximumSizes[3] = outputSize
+		}
+	}
+
+	for _, w := range watches {
+		printBits(maximumSizes, w.Name, w.Input.values, w.Output.values)
+	}
+	isPrinted = true
+}
+
+func printBits(maximumSizes []int, prefix string, inputBits, outputBits []bool) {
+	inputName := fmt.Sprintf("%s.inputs", prefix)
+	inputName += strings.Repeat(" ", maximumSizes[0]-len(inputName)+3)
+
+	input := getBitString(inputBits)
+	input += strings.Repeat(" ", maximumSizes[1]-len(input)+3)
+
+	outputName := fmt.Sprintf("%s.outputs", prefix)
+	outputName += strings.Repeat(" ", maximumSizes[2]-len(outputName)+3)
+
+	output := getBitString(outputBits)
+	output += strings.Repeat(" ", maximumSizes[3]-len(output)+3)
+
+	fmt.Println(inputName, input, outputName, output)
+}
+
+func getBitString(bits []bool) string {
 	l := ""
 	for i := range bits {
 		b := bits[len(bits)-i-1]
@@ -160,5 +271,5 @@ func printBits(prefix string, bits []bool) {
 		}
 	}
 
-	log.Println(prefix, l)
+	return l
 }

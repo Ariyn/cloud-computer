@@ -37,6 +37,11 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 	return sChannel
 }
 
+func addChildren(ctx context.Context, client *redis.Client, name string) {
+	parents := strings.Split(name, ".")
+	client.SAdd(ctx, parents[0]+".children", strings.Join(parents[:len(parents)-1], "."))
+}
+
 func addInput(ctx context.Context, client *redis.Client, gateName, name string) {
 	//client.SAdd(gateName+".inputs", name)
 
