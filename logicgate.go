@@ -184,7 +184,8 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	if isInput {
-		addInput(client, name, name)
+		addInput(ctx, client, name, name)
+		addChildren(ctx, client, name)
 	}
 
 	previousValues := make([]bool, len(inputElements))
@@ -200,7 +201,7 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	if isAlias {
-		addOutput(client, name, name)
+		addOutput(ctx, client, name, name)
 	}
 
 	// TODO: inputs와 이름의 차이가 큼. 수정할 것
