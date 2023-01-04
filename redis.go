@@ -3,14 +3,22 @@ package cloud_computer
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"log"
 	"strings"
 )
 
 func ConnectRedis() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-		DB:   0,
+	client := redis.NewClient(&redis.Options{
+		Addr:       "localhost:6379",
+		DB:         0,
+		MaxRetries: 5,
 	})
+
+	if status := client.Ping(context.TODO()); status.Err() != nil {
+		log.Fatal(status.Err())
+	}
+
+	return client
 }
 
 // TODO: rename Read to Subscribe
@@ -19,6 +27,10 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 
 	//log.Println("running read async redis", name)
 	sub := client.Subscribe(ctx, name)
+	if err := sub.Ping(ctx); err != nil {
+		log.Println(name + " die due to error on subscribe")
+		panic(err)
+	}
 	go func(sub *redis.PubSub) {
 		defer sub.Close()
 		defer sub.Unsubscribe(ctx, name)
