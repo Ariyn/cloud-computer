@@ -61,11 +61,21 @@ connect l.i4 demux.o4
 
 connect l.i6 $inputs.5
 
+define l2 4bit-register 6 4
+connect l2.i1 l.o1
+connect l2.i2 l.o2
+connect l2.i3 l.o3
+connect l2.i4 l.o4
+
+define clockNot not 1 1
+connect clockNot.i1 $inputs.5
+connect l2.i6 clockNot.o1
+
 define mux 4x8-mux 5 8
-connect mux.i1 l.o1
-connect mux.i2 l.o2
-connect mux.i3 l.o3
-connect mux.i4 l.o4
+connect mux.i1 l2.o1
+connect mux.i2 l2.o2
+connect mux.i3 l2.o3
+connect mux.i4 l2.o4
 connect mux.i5 $inputs.13
 
 connect ram.i1 mux.o1
