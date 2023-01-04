@@ -39,4 +39,4 @@ alias o1 alu1.output
 alias o2 alu2.output
 alias o3 alu3.output
 alias o4 alu4.output
-alias carry alu4.carry
+alias o5 alu4.carry
