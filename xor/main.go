@@ -2,7 +2,6 @@ package main
 
 import (
 	cc "github.com/ariyn/cloud-computer"
-	"log"
 )
 
 func main() {
@@ -10,9 +9,6 @@ func main() {
 	if name == "" {
 		name = "xor"
 	}
-
-	log.Println("start")
-
 	inputs := cc.ParseInputs(cc.Inputs...)
 	outputs := cc.CreateOutputs(1)
 

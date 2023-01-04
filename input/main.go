@@ -2,7 +2,6 @@ package main
 
 import (
 	cc "github.com/ariyn/cloud-computer"
-	"log"
 )
 
 func main() {
@@ -15,8 +14,6 @@ func main() {
 	e := cc.Element{
 		GateName: name,
 	}
-
-	log.Println("input", inputs)
 	err := cc.RunRedis(func(inputs ...bool) (results []bool) {
 		return inputs
 	}, name, inputs, []cc.Element{e}, false, false, true)

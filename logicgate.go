@@ -57,7 +57,7 @@ func parseArguments() {
 
 		if strings.HasPrefix(arg, "-i") {
 			// TODO: -i 뒤의 숫자를 파싱해서 해당 번호에 넣기
-			log.Println(arg, os.Args[index+1])
+			//log.Println(arg, os.Args[index+1])
 			Inputs = append(Inputs, os.Args[index+1])
 			index += 1
 		} else if arg == "-name" {
@@ -173,8 +173,6 @@ func CreateOutputs(size int) (elements []Element) {
 }
 
 func RunRedis(handler BoolHandler, name string, inputElements []Element, outputElements []Element, useShortcut bool, isAlias, isInput bool) (err error) {
-	log.Println(handler, name, inputElements, outputElements)
-
 	ctx := context.TODO()
 	client := ConnectRedis()
 
