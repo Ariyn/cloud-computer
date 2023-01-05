@@ -195,7 +195,14 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 			previousValues[i] = element.StaticValue
 			continue
 		}
+
 		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
+
+		v, err := ReadRedis(ctx, client, element.String()+".status")
+		if err != nil {
+			panic(err)
+		}
+		previousValues[i] = v
 	}
 
 	if isAlias {

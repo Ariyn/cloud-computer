@@ -72,17 +72,16 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 				data = 1
 			}
 
+			err := writeRedis(ctx, client, name+".status", s)
+			if err != nil {
+				panic(err)
+			}
+
 			//fmt.Printf("message at channel %s = %v\n", name, s)
 
 			intCmd := client.Publish(ctx, name, data)
 			if intCmd.Err() != nil {
 				panic(intCmd.Err())
-			}
-
-			// TODO: output의 값이 status에 덮어씌여지고 있음
-			err := writeRedis(ctx, client, name+".status", s)
-			if err != nil {
-				panic(err)
 			}
 		}
 	}(client, name)
@@ -96,6 +95,18 @@ func addOutput(ctx context.Context, client *redis.Client, gateName, name string)
 	parents := strings.Split(gateName, ".")
 	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+".outputs", name)
 	//client.SAdd(parents[0]+".outputs", name)
+}
+
+func ReadRedis(ctx context.Context, client *redis.Client, name string) (value bool, err error) {
+	v, err := client.Get(ctx, name).Result()
+	if err != nil && err != redis.Nil {
+		return
+	}
+
+	if v == "1" {
+		return true, nil
+	}
+	return false, nil
 }
 
 func writeRedis(ctx context.Context, client *redis.Client, name string, value bool) (err error) {

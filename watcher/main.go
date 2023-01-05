@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	cc "github.com/ariyn/cloud-computer"
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v9"
 	"github.com/gosuri/uilive"
 	"log"
 	"reflect"
@@ -94,14 +94,20 @@ func getWatches(ctx context.Context, client *redis.Client, name string) *Watches
 		return first < second
 	})
 
-	channels := make([]<-chan bool, 0)
-	for _, name := range w {
-		channels = append(channels, cc.ReadAsyncRedis(context.TODO(), client, name))
+	values := make([]bool, len(w))
+	channels := make([]<-chan bool, len(w))
+	for i, name := range w {
+		channels[i] = cc.ReadAsyncRedis(context.TODO(), client, name)
+		v, err := cc.ReadRedis(ctx, client, name+".status")
+		if err != nil {
+			panic(err)
+		}
+		values[i] = v
 	}
 
 	return &Watches{
 		channels: channels,
-		values:   make([]bool, len(channels)),
+		values:   values,
 	}
 }
 
