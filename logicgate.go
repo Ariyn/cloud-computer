@@ -4,174 +4,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v9"
 	"log"
 	"os"
 	"os/signal"
 	"reflect"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
 )
 
-var InvalidElement error
-
-type ArrayStringFlag []string
-
-func (asf *ArrayStringFlag) String() string {
-	return strings.Join(*asf, " ")
-}
-
-func (asf *ArrayStringFlag) Set(v string) error {
-	*asf = append(*asf, v)
-	return nil
-}
-
 const DebugChannelName = "CLOUD_COMPUTER_DEBUG"
 
-var Inputs ArrayStringFlag
-var Outputs ArrayStringFlag
+var InvalidElement = errors.New("invalid element")
+var Inputs = make([]string, 0)
+var Outputs = make([]string, 0)
 var Name string
 var UseOptimization bool = true
 var IsDebugging bool
-var Client redis.Conn
 
-func init() {
-	//flag.StringVar(&Name, "name", "", "and, or, not, etc...")
-	//flag.StringVar(&InputName1, "i1", "input_1", "input_1")
-	//flag.StringVar(&InputName2, "i2", "input_2", "input_2")
-	//flag.Var(&Inputs, "inputs", "inputs. first input will be set to input 1\neg) -inputs a.o1 -inputs b.o1")
-
-	parseArguments()
-
-	InvalidElement = errors.New("invalid element")
-}
-
-func parseArguments() {
-	for index := 1; index < len(os.Args); index++ {
-		arg := os.Args[index]
-		if !strings.HasPrefix(arg, "-") {
-			continue
-		}
-
-		if strings.HasPrefix(arg, "-i") {
-			// TODO: -i 뒤의 숫자를 파싱해서 해당 번호에 넣기
-			//log.Println(arg, os.Args[index+1])
-			Inputs = append(Inputs, os.Args[index+1])
-			index += 1
-		} else if arg == "-name" {
-			Name = os.Args[index+1]
-		} else if arg == "-no-optimization" {
-			UseOptimization = false
-		} else if strings.HasPrefix(arg, "-o") {
-			// TODO: -o 뒤의 숫자를 파싱해서 해당 번호에 넣기
-			Outputs = append(Outputs, os.Args[index+1])
-			index += 1
-		} else if arg == "-debug" {
-			if os.Args[index+1] == "1" {
-				IsDebugging = true
-				log.Println("RUNNING DEBUGGING MODE")
-			}
-			index += 1
-		}
-	}
-}
-
-// type BoolHandler func(prev, curr bool) (o bool)
 type BoolHandler func(inputs ...bool) (o []bool)
 
-// TODO: merge this and parse.Element
-type Element struct {
-	GateName      string
-	Part          string
-	IsAlias       bool
-	IsParameter   bool
-	StaticValue   bool
-	IsStaticValue bool
+func init() {
+	parseArguments()
 }
 
-func (e Element) String() string {
-	es := []string{e.GateName}
-	if !e.IsAlias && e.Part != "" {
-		es = append(es, e.Part)
-	}
-
-	return strings.Join(es, ".")
-}
-
-func (e Element) Bash() string {
-	name := e.String()
-
-	if name == "" && e.IsStaticValue {
-		name = ""
-		if e.StaticValue == true {
-			name = "1"
-		} else {
-			name = "0"
-		}
-		return name
-	}
-
-	if name[0] == '$' && 7 <= len(name) && name[1:7] == "inputs" {
-		name = fmt.Sprintf("${i%s}", strings.ReplaceAll(name, "$inputs.", ""))
-		return name
-	}
-
-	return fmt.Sprintf("${name_variable}%s", name)
-}
-
-func parseElement(words ...string) Element {
-	if n, err := strconv.Atoi(words[0]); err == nil {
-		e := Element{
-			IsStaticValue: true,
-		}
-
-		if n == 0 {
-			e.StaticValue = false
-		} else {
-			e.StaticValue = true
-		}
-
-		return e
-	}
-
-	e := Element{
-		GateName: strings.Join(words, "."),
-	}
-
-	//if 2 <= len(words) {
-	//	// Parse Element recursive
-	//	e.Part = strings.Join(words[1:], ".")
-	//}
-	//
-	//log.Println(e)
-
-	return e
-}
-
-func ParseInputs(inputs ...string) (elements []Element) {
-	for _, i := range inputs {
-		words := strings.Split(i, ".")
-		e := parseElement(words...)
-		elements = append(elements, e)
-	}
-
-	return
-}
-
-func CreateOutputs(size int) (elements []Element) {
-	for i := 0; i < size; i++ {
-		e := Element{
-			Part:    fmt.Sprintf("o%d", i+1),
-			IsAlias: false,
-		}
-
-		elements = append(elements, e)
-	}
-	return
-}
-
+// TODO: make redis as interface
 func RunRedis(handler BoolHandler, name string, inputElements []Element, outputElements []Element, useShortcut bool, isAlias, isInput bool) (err error) {
 	ctx := context.TODO()
 	client := ConnectRedis()
@@ -307,20 +164,6 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	return nil
-}
-
-func equalOutputs(v1, v2 []bool) bool {
-	if len(v1) != len(v2) {
-		return false
-	}
-
-	for i := range v1 {
-		if v1[i] != v2[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 func Clock(clk int, outputElements []Element) (err error) {
