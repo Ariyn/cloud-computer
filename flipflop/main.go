@@ -23,7 +23,7 @@ func main() {
 		currentStatus := previousStatus
 		if i[0] {
 			currentStatus = true
-		} else if i[1] {
+		} else if !i[0] || i[1] {
 			currentStatus = false
 		}
 
