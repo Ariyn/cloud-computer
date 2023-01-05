@@ -17,7 +17,6 @@ func ConnectRedis() *redis.Client {
 	if status := client.Ping(context.TODO()); status.Err() != nil {
 		log.Fatal(status.Err())
 	}
-
 	return client
 }
 
@@ -25,7 +24,6 @@ func ConnectRedis() *redis.Client {
 func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (status <-chan bool) {
 	sChannel := make(chan bool, 1)
 
-	//log.Println("running read async redis", name)
 	sub := client.Subscribe(ctx, name)
 	if err := sub.Ping(ctx); err != nil {
 		log.Println(name + " die due to error on subscribe")

@@ -176,11 +176,6 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	ctx := context.TODO()
 	client := ConnectRedis()
 
-	err = writeRedis(ctx, client, name+".status", false)
-	if err != nil {
-		panic(err)
-	}
-
 	if isInput {
 		addInput(ctx, client, name, name)
 		addChildren(ctx, client, name)
@@ -217,9 +212,9 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	// TODO: 여기서 문제가 없을지 확인 필요하다. 과연...
-	outputs := handler(previousValues...)
+	previousOutputs = handler(previousValues...)
 	for i, ch := range outputChannels {
-		ch <- outputs[i]
+		ch <- previousOutputs[i]
 	}
 
 	cases := make([]reflect.SelectCase, 0)
@@ -254,7 +249,6 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		}
 
 		if index == len(cases)-1 {
-			deleteRedis(ctx, client, name+".status")
 			for _, element := range outputElements {
 				element.GateName = name
 				deleteRedis(ctx, client, element.String()+".status")
