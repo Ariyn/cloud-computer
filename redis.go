@@ -2,7 +2,7 @@ package cloud_computer
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v9"
 	"log"
 	"strings"
 )
