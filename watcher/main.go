@@ -36,14 +36,13 @@ func (af *arrayFlags) Set(value string) error {
 var name string
 var input bool
 var output bool
+var excepts arrayFlags
 
 var nameRegex *regexp.Regexp
 
 func init() {
-	//flag.Var(&names, "names", "names for watch")
+	flag.Var(&excepts, "e", "will not watch itself, and it's children")
 	flag.StringVar(&name, "name", "", "name for watch")
-	//flag.BoolVar(&input, "I", false, "isInput")
-	//flag.BoolVar(&output, "O", false, "isOutput")
 
 	nameRegex = regexp.MustCompile(`.+?\.[io](\d+)`)
 }
@@ -133,12 +132,6 @@ func main() {
 		panic(err)
 	}
 
-	// TODO: need numeric sort
-	sort.Slice(children, func(i, j int) bool {
-		return children[i] < children[j]
-	})
-	log.Println(children)
-
 	watches := make([]Watch, 0)
 
 	index := 0
@@ -196,7 +189,35 @@ func getWatch(watches []Watch, index int) (*Watches, int, error) {
 }
 
 func getChildren(client *redis.Client, name string) (children []string, err error) {
-	return client.SMembers(context.Background(), name+".children").Result()
+	rawChildren, err := client.SMembers(context.Background(), name+".children").Result()
+	if err != nil {
+		return
+	}
+
+	for _, c := range rawChildren {
+		if isExcept(c) {
+			continue
+		}
+
+		children = append(children, c)
+	}
+
+	// TODO: need numeric sort
+	sort.Slice(children, func(i, j int) bool {
+		return children[i] < children[j]
+	})
+
+	return
+}
+
+func isExcept(name string) bool {
+	for _, e := range excepts {
+		if strings.HasPrefix(name, e) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func findNumber(name string) int {
