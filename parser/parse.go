@@ -306,7 +306,7 @@ func parseElement(word string) (element cc.Element, err error) {
 		return element, nil
 	}
 
-	element.Part = elements[1]
+	element.Part = strings.Join(elements[1:], ".")
 
 	//err = element.IsValidPart()
 	//if err != nil {
