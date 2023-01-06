@@ -7,7 +7,6 @@ import (
 	"fmt"
 	cc "github.com/ariyn/cloud-computer"
 	"github.com/go-redis/redis/v9"
-	"github.com/gosuri/uilive"
 	"log"
 	"reflect"
 	"regexp"
@@ -111,8 +110,6 @@ func getWatches(ctx context.Context, client *redis.Client, name string) *Watches
 }
 
 var children []string
-
-var writer *uilive.Writer
 
 // TODO: 이부분 RunRedis와 거의 동일함. 추상화 할 방법 찾아보기
 func main() {
