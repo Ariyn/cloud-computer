@@ -38,8 +38,8 @@ connect fa2.i3 fa1.carry
 connect fa3.i3 fa2.carry
 connect fa4.i3 fa3.carry
 
-alias b1 fa1.sum
-alias b2 fa2.sum
-alias b3 fa3.sum
-alias b4 fa4.sum
-alias b5 fa4.carry
+alias o1 fa1.sum
+alias o2 fa2.sum
+alias o3 fa3.sum
+alias o4 fa4.sum
+alias o5 fa4.carry
