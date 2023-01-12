@@ -93,21 +93,27 @@ func parse(script string) (bash string, err error) {
 		// TODO: validate words count
 		switch words[0] {
 		case "define":
-			inputSize, err := strconv.Atoi(words[3])
-			if err != nil {
-				panic(err)
-				return bash, err
-			}
+			var inputSize, outputSize int
+			if len(words) <= 3 && !isPreCompiledGate(words[1]) {
+				//inputSize
+			} else {
+				inputSize, err = strconv.Atoi(words[3])
+				if err != nil {
+					panic(err)
+					return bash, err
+				}
 
-			if len(words) <= 4 {
-				log.Println("Wrong define", strings.Join(words, " "))
-				panic("wrong")
-			}
-			outputSize, err := strconv.Atoi(words[4])
-			if err != nil {
-				log.Println("Wrong define", strings.Join(words, " "))
-				panic(err)
-				return bash, err
+				if len(words) <= 4 {
+					log.Println("Wrong define", strings.Join(words, " "))
+					panic("wrong")
+				}
+
+				outputSize, err = strconv.Atoi(words[4])
+				if err != nil {
+					log.Println("Wrong define", strings.Join(words, " "))
+					panic(err)
+					return bash, err
+				}
 			}
 
 			noOptimization := false
@@ -144,7 +150,7 @@ func parse(script string) (bash string, err error) {
 				}
 			}
 			//outputGate := definitionsByName[e2.GateName]
-			log.Println("e1.part", e1.Part)
+			//log.Println("e1.part", e1.Part)
 			inputGate.inputConnection = append(inputGate.inputConnection, fmt.Sprintf(`-%s "%s"`, e1.Part, e2.Bash()))
 
 			commandsByName[e1.GateName] = inputGate
@@ -233,6 +239,26 @@ fi
 	return bash, nil
 }
 
+func isPreCompiledGate(s string) (r bool) {
+	switch s {
+	case "xor":
+		r = true
+	case "and":
+		r = true
+	case "or":
+		r = true
+	case "input":
+		r = true
+	case "alias":
+		r = true
+	case "not":
+		r = true
+	case "flipflop":
+		r = true
+	}
+	return
+}
+
 type definition struct {
 	typ             string
 	bin             string
@@ -249,7 +275,7 @@ func (def *definition) Bash() string {
 		child = "-child"
 	}
 
-	inputs := make([]string, def.inputSize)
+	inputs := make([]string, len(def.inputConnection))
 	for i, c := range def.inputConnection {
 		inputs[i] = fmt.Sprintf(`%s`, c)
 	}
@@ -289,7 +315,7 @@ func parseElement(word string) (element cc.Element, err error) {
 		} else {
 			element.StaticValue = true
 		}
-		log.Println(word, "skipping")
+		//log.Println(word, "skipping")
 		return element, nil
 	}
 
