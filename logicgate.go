@@ -21,6 +21,7 @@ var Outputs = make([]string, 0)
 var Name string
 var UseOptimization bool = true
 var IsDebugging bool
+var IsVerbose bool
 
 type BoolHandler func(inputs ...bool) (o []bool)
 
@@ -39,7 +40,7 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 	}
 
 	previousValues := make([]bool, len(inputElements))
-	previousOutputs := make([]bool, len(inputElements))
+	previousOutputs := make([]bool, len(outputElements))
 
 	inputs := make([]<-chan bool, 0)
 	for i, element := range inputElements {
@@ -53,6 +54,9 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		v, err := ReadRedis(ctx, client, element.String()+".status")
 		if err != nil {
 			panic(err)
+		}
+		if IsVerbose {
+			log.Println(i, v)
 		}
 		previousValues[i] = v
 	}
@@ -106,9 +110,11 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		}
 
 		if index == len(cases)-1 {
+			deleteRedis(ctx, client, name+".status")
 			for _, element := range outputElements {
 				element.GateName = name
 				deleteRedis(ctx, client, element.String()+".status")
+				//log.Println("removing", element.String()+".status")
 			}
 
 			if isInput {
@@ -144,8 +150,17 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		previousValues[index] = value.Bool()
 
 		outputs := handler(previousValues...)
+		if IsVerbose {
+			log.Println(outputs)
+		}
+
 		if useShortcut && equalOutputs(previousOutputs, outputs) {
 			continue
+		}
+
+		if IsVerbose {
+			log.Println("write", outputs)
+			log.Println(name+".status", outputs[0])
 		}
 
 		// WARN: 임시 코드. 좀 더 우아하게 수정할 것

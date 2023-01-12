@@ -2,6 +2,7 @@ package main
 
 import (
 	cc "github.com/ariyn/cloud-computer"
+	"log"
 )
 
 func main() {
@@ -16,6 +17,10 @@ func main() {
 		results = append(results, inputs[0])
 		for _, b := range inputs[1:] {
 			results[0] = results[0] && b
+		}
+
+		if cc.IsVerbose {
+			log.Printf("name %s, inputs: %v, results: %v", name, inputs, results)
 		}
 		return
 	}, name, inputs, outputs, cc.UseOptimization, false, false)
