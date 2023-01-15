@@ -8,7 +8,7 @@ inputs 13
 # inputs.10 ~ inputs.12 = alu operand
 #   10 is LSB, 12 is MSB.
 #   0: A and B, 1: A or B, 2: not A, 3: A + B, 4: LOAD A
-# inputs.12 = destination selector
+# inputs.13 = destination selector
 #  destination selector is 0: destination to ram
 #  destination selector is 1: destination to alu inputs b
 
