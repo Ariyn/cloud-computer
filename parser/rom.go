@@ -90,7 +90,6 @@ connect or{j+4}.i{i} and2-{i}-{j}.o1`
 			romData = append(romData, compliedLine)
 		}
 	}
-
 	llScript = strings.ReplaceAll(llScript, "{rom_data}", strings.Join(romData, "\n\n"))
 
 	return
@@ -98,6 +97,9 @@ connect or{j+4}.i{i} and2-{i}-{j}.o1`
 
 func filterComment(lines []string) (ret []string) {
 	for _, l := range lines {
+		if len(l) == 0 {
+			continue
+		}
 		if l[0] == '#' {
 			continue
 		}
