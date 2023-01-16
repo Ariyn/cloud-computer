@@ -80,11 +80,8 @@ connect and2-{i}-{j}.i2 {bit}
 connect or{j+4}.i{i} and2-{i}-{j}.o1`
 
 	romData := make([]string, 0)
-	for i, line := range strings.Split(script, "\n") {
-		if line[0] == '#' {
-			continue
-		}
-
+	scriptLines := filterComment(strings.Split(script, "\n"))
+	for i, line := range scriptLines {
 		for j, c := range line {
 			compliedLine := strings.ReplaceAll(iterationFormat, "{i}", strconv.Itoa(i+1))
 			compliedLine = strings.ReplaceAll(compliedLine, "{j}", strconv.Itoa(j+1))
@@ -97,4 +94,16 @@ connect or{j+4}.i{i} and2-{i}-{j}.o1`
 	llScript = strings.ReplaceAll(llScript, "{rom_data}", strings.Join(romData, "\n\n"))
 
 	return
+}
+
+func filterComment(lines []string) (ret []string) {
+	for _, l := range lines {
+		if l[0] == '#' {
+			continue
+		}
+
+		ret = append(ret, l)
+	}
+
+	return ret
 }
