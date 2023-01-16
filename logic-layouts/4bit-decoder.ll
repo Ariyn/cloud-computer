@@ -65,7 +65,7 @@ connect a7.i4 s4.o1
 
 # a8 = 0111
 define a8 and 4 1 no-optimization
-connect a8.i1 $inputs.2
+connect a8.i1 $inputs.1
 connect a8.i2 $inputs.2
 connect a8.i3 $inputs.3
 connect a8.i4 s4.o1
