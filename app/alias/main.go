@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	cc "github.com/ariyn/cloud-computer"
+	"github.com/ariyn/cloud-computer/gate"
 )
 
 func main() {
@@ -11,9 +13,10 @@ func main() {
 		IsAlias: true,
 	}}
 
-	err := cc.RunRedis(func(i ...bool) []bool {
-		return []bool{i[0]}
-	}, name, inputs, outputs, false, true, false)
+	alias := gate.NewAliasGate(name, inputs, outputs)
+	alias.UseOptimization = cc.UseOptimization
+
+	err := cc.RunGateWithRedis(context.Background(), alias)
 	if err != nil {
 		panic(err)
 	}
