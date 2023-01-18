@@ -37,14 +37,18 @@ func (g *Alias) Init(ctx context.Context, client *redis.Client) {
 
 func (g *Alias) Handler(index int, value bool) (results []bool, changed bool) {
 	g.PreviousInputs[index] = value
-	results = g.PreviousInputs
+	changed = g.Changed(g.PreviousInputs, g.PreviousOutputs)
+
+	g.PreviousOutputs[index] = value
+	results = g.PreviousOutputs
 
 	if g.IsVerbose {
 		log.Printf("name %s, inputs: %v, results: %v", g.Name, g.PreviousInputs, results)
 	}
 
-	changed = g.Changed(results, g.PreviousOutputs)
-	g.PreviousOutputs = results
-
 	return
+}
+
+func (g *Alias) GetType() string {
+	return "alias"
 }
