@@ -53,6 +53,14 @@ func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 
 	gate.Init(ctx, client)
 
+	if gate.GetType() == "input" {
+		addInput(ctx, client, gate.GetName(), gate.GetName())
+		addChildren(ctx, client, gate.GetName())
+	}
+	if gate.GetType() == "alias" {
+		addOutput(ctx, client, gate.GetName(), gate.GetName())
+	}
+
 	// TODO: inputs, outputs가 redis에 붙는 동작은 여기서 진행해야 한다.
 	// Gate type은 좀 더 게이트 동작 그 자체에 집중할 수 있도록 수정 필요
 
@@ -69,6 +77,17 @@ func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 		for _, element := range gate.GetOutputs() {
 			element.GateName = gate.GetName()
 			deleteRedis(ctx, client, element.String()+".status")
+		}
+
+		if gate.GetType() == "input" {
+			parents := strings.Split(gate.GetName(), ".")
+			grandParent := strings.Join(parents[:len(parents)-1], ".")
+			deleteRedis(ctx, client, grandParent+".inputs")
+			deleteRedis(ctx, client, grandParent+".children")
+		}
+		if gate.GetType() == "alias" {
+			parents := strings.Split(gate.GetName(), ".")
+			deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+".outputs")
 		}
 	}()
 

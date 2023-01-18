@@ -62,20 +62,6 @@ func (g *FlipFlop) Handler(index int, value bool) (results []bool, changed bool)
 	return
 }
 
-//var previousStatus = false
-//
-//func FlipFlopWithClock(inputs ...bool) []bool {
-//	if inputs[2] == false {
-//		return []bool{previousStatus, !previousStatus}
-//	}
-//
-//	currentStatus := previousStatus
-//	if inputs[0] {
-//		currentStatus = true
-//	} else if !inputs[0] || inputs[1] {
-//		currentStatus = false
-//	}
-//
-//	previousStatus = currentStatus
-//	return []bool{currentStatus, !currentStatus}
-//}
+func (g *FlipFlop) GetType() string {
+	return "flipflop"
+}

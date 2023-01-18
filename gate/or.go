@@ -52,3 +52,7 @@ func (g *Or) Handler(index int, value bool) (results []bool, changed bool) {
 
 	return
 }
+
+func (g *Or) GetType() string {
+	return "or"
+}

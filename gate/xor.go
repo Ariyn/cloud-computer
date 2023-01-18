@@ -52,3 +52,7 @@ func (g *Xor) Handler(index int, value bool) (results []bool, changed bool) {
 
 	return
 }
+
+func (g *Xor) GetType() string {
+	return "xor"
+}

@@ -52,3 +52,7 @@ func (g *And) Handler(index int, value bool) (results []bool, changed bool) {
 
 	return
 }
+
+func (g *And) GetType() string {
+	return "and"
+}

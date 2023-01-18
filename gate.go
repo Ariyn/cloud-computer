@@ -110,6 +110,10 @@ func (g *Gate) Changed(v1, v2 []bool) bool {
 	return false
 }
 
+func (g *Gate) GetType() string {
+	panic("not implements")
+}
+
 type Gater interface {
 	Init(ctx context.Context, client *redis.Client)
 	Handler(index int, input bool) (o []bool, changed bool)
@@ -120,4 +124,5 @@ type Gater interface {
 	GetOutputs() (outputs []Element)
 	GetOutputSize() int
 	GetOutputChannels() []chan<- bool
+	GetType() string
 }

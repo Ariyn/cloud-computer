@@ -48,3 +48,7 @@ func (g *Input) Handler(index int, value bool) (results []bool, changed bool) {
 
 	return
 }
+
+func (g *Input) GetType() string {
+	return "input"
+}

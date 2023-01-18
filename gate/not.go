@@ -48,3 +48,7 @@ func (g *Not) Handler(index int, value bool) (results []bool, changed bool) {
 
 	return
 }
+
+func (g *Not) GetType() string {
+	return "not"
+}
