@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+var ErrEmptySignals = errors.New("empty signals")
+
 const DebugChannelName = "CLOUD_COMPUTER_DEBUG"
 
 var InvalidElement = errors.New("invalid element")
@@ -27,6 +29,23 @@ type BoolHandler func(inputs ...bool) (o []bool)
 
 func init() {
 	parseArguments()
+}
+
+func getSelectCaseSignals(signals ...os.Signal) (sc reflect.SelectCase, err error) {
+	if len(signals) == 0 {
+		err = ErrEmptySignals
+		return
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, signals...)
+
+	sc = reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: reflect.ValueOf(sigs),
+	}
+
+	return
 }
 
 func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
@@ -71,13 +90,11 @@ func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 		})
 	}
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	cases = append(cases, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(sigs),
-	})
+	sc, err := getSelectCaseSignals(syscall.SIGINT, syscall.SIGTERM)
+	if err != nil {
+		panic(err)
+	}
+	cases = append(cases, sc)
 
 	defer func() {
 		deleteRedis(ctx, client, gate.GetName()+".status")
@@ -184,13 +201,11 @@ func RunRedis(handler BoolHandler, name string, inputElements []Element, outputE
 		})
 	}
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	cases = append(cases, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(sigs),
-	})
+	sc, err := getSelectCaseSignals(syscall.SIGINT, syscall.SIGTERM)
+	if err != nil {
+		panic(err)
+	}
+	cases = append(cases, sc)
 
 	for {
 		index, value, ok := reflect.Select(cases)
