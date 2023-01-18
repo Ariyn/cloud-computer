@@ -51,44 +51,8 @@ func getSelectCaseSignals(signals ...os.Signal) (sc reflect.SelectCase, err erro
 func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 	client := ConnectRedis()
 
-	previousValues := make([]bool, gate.GetInputSize())
-	previousOutputs := make([]bool, gate.GetOutputSize())
-
-	inputs := make([]<-chan bool, 0)
-	for i, element := range gate.GetInputs() {
-		if element.IsStaticValue {
-			previousValues[i] = element.StaticValue
-			continue
-		}
-
-		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
-
-		v, err := ReadRedis(ctx, client, element.String()+".status")
-		if err != nil {
-			panic(err)
-		}
-
-		previousValues[i] = v
-	}
-
-	outputChannels := make([]chan<- bool, 0)
-	for _, element := range gate.GetOutputs() {
-		element.GateName = gate.GetName() // TODO: 이거 NewGate 안쪽으로 넣어줄 것
-		outputChannels = append(outputChannels, WriteAsyncRedis(ctx, client, element.String()))
-	}
-
-	previousOutputs = gate.Handler(previousValues...)
-	for i, ch := range outputChannels {
-		ch <- previousOutputs[i]
-	}
-
-	cases := make([]reflect.SelectCase, 0)
-	for _, ch := range inputs {
-		cases = append(cases, reflect.SelectCase{
-			Dir:  reflect.SelectRecv,
-			Chan: reflect.ValueOf(ch),
-		})
-	}
+	gate.Init(ctx, client)
+	cases := gate.SelectCases()
 
 	sc, err := getSelectCaseSignals(syscall.SIGINT, syscall.SIGTERM)
 	if err != nil {
@@ -114,9 +78,8 @@ func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 			return nil
 		}
 
-		previousValues[index] = value.Bool()
-		outputs := gate.Handler(previousValues...)
-		if equalOutputs(previousOutputs, outputs) {
+		outputs, changed := gate.Handler(index, value.Bool())
+		if !changed {
 			continue
 		}
 
@@ -125,11 +88,9 @@ func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 			panic(err)
 		}
 
-		for i, ch := range outputChannels {
+		for i, ch := range gate.GetOutputChannels() {
 			ch <- outputs[i]
 		}
-
-		previousOutputs = outputs
 	}
 
 	return nil
