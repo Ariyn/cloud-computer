@@ -52,6 +52,10 @@ func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
 	client := ConnectRedis()
 
 	gate.Init(ctx, client)
+
+	// TODO: inputs, outputs가 redis에 붙는 동작은 여기서 진행해야 한다.
+	// Gate type은 좀 더 게이트 동작 그 자체에 집중할 수 있도록 수정 필요
+
 	cases := gate.SelectCases()
 
 	sc, err := getSelectCaseSignals(syscall.SIGINT, syscall.SIGTERM)
