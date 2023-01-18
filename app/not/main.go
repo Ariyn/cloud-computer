@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	cc "github.com/ariyn/cloud-computer"
+	"github.com/ariyn/cloud-computer/gate"
 )
 
 func main() {
@@ -13,10 +15,10 @@ func main() {
 	inputs := cc.ParseInputs(cc.Inputs...)
 	outputs := cc.CreateOutputs(1)
 
-	err := cc.RunRedis(func(i ...bool) (results []bool) {
-		results = append(results, !i[0])
-		return
-	}, name, inputs, outputs, cc.UseOptimization, false, false)
+	not := gate.NewNotGate(name, inputs, outputs)
+	not.UseOptimization = cc.UseOptimization
+
+	err := cc.RunGateWithRedis(context.Background(), not)
 	if err != nil {
 		panic(err)
 	}
