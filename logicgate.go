@@ -29,6 +29,95 @@ func init() {
 	parseArguments()
 }
 
+func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
+	client := ConnectRedis()
+
+	previousValues := make([]bool, gate.GetInputSize())
+	previousOutputs := make([]bool, gate.GetOutputSize())
+
+	inputs := make([]<-chan bool, 0)
+	for i, element := range gate.GetInputs() {
+		if element.IsStaticValue {
+			previousValues[i] = element.StaticValue
+			continue
+		}
+
+		inputs = append(inputs, ReadAsyncRedis(ctx, client, element.String()))
+
+		v, err := ReadRedis(ctx, client, element.String()+".status")
+		if err != nil {
+			panic(err)
+		}
+
+		previousValues[i] = v
+	}
+
+	outputChannels := make([]chan<- bool, 0)
+	for _, element := range gate.GetOutputs() {
+		element.GateName = gate.GetName() // TODO: 이거 NewGate 안쪽으로 넣어줄 것
+		outputChannels = append(outputChannels, WriteAsyncRedis(ctx, client, element.String()))
+	}
+
+	previousOutputs = gate.Handler(previousValues...)
+	for i, ch := range outputChannels {
+		ch <- previousOutputs[i]
+	}
+
+	cases := make([]reflect.SelectCase, 0)
+	for _, ch := range inputs {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ch),
+		})
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	cases = append(cases, reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: reflect.ValueOf(sigs),
+	})
+
+	defer func() {
+		deleteRedis(ctx, client, gate.GetName()+".status")
+		for _, element := range gate.GetOutputs() {
+			element.GateName = gate.GetName()
+			deleteRedis(ctx, client, element.String()+".status")
+		}
+	}()
+
+	for {
+		index, value, ok := reflect.Select(cases)
+		if !ok {
+			return nil
+		}
+
+		if index == len(cases)-1 {
+			return nil
+		}
+
+		previousValues[index] = value.Bool()
+		outputs := gate.Handler(previousValues...)
+		if equalOutputs(previousOutputs, outputs) {
+			continue
+		}
+
+		err = writeRedis(ctx, client, gate.GetName()+".status", outputs[0])
+		if err != nil {
+			panic(err)
+		}
+
+		for i, ch := range outputChannels {
+			ch <- outputs[i]
+		}
+
+		previousOutputs = outputs
+	}
+
+	return nil
+}
+
 // TODO: make redis as interface
 func RunRedis(handler BoolHandler, name string, inputElements []Element, outputElements []Element, useShortcut bool, isAlias, isInput bool) (err error) {
 	ctx := context.TODO()
