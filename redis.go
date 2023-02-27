@@ -75,8 +75,6 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 				panic(err)
 			}
 
-			//fmt.Printf("message at channel %s = %v\n", name, s)
-
 			intCmd := client.Publish(ctx, name, data)
 			if intCmd.Err() != nil {
 				panic(intCmd.Err())

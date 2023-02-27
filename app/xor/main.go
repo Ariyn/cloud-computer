@@ -1,22 +1,23 @@
 package main
 
 import (
+	"context"
 	cc "github.com/ariyn/cloud-computer"
+	"github.com/ariyn/cloud-computer/gate"
 )
 
 func main() {
 	name := cc.Name
 	if name == "" {
-		name = "not"
+		name = "xor"
 	}
-
 	inputs := cc.ParseInputs(cc.Inputs...)
 	outputs := cc.CreateOutputs(1)
 
-	err := cc.RunRedis(func(i ...bool) (results []bool) {
-		results = append(results, !i[0])
-		return
-	}, name, inputs, outputs, cc.UseOptimization, false, false)
+	xor := gate.NewXorGate(name, inputs, outputs)
+	xor.UseOptimization = cc.UseOptimization
+
+	err := cc.RunGateWithRedis(context.Background(), xor)
 	if err != nil {
 		panic(err)
 	}
