@@ -1,5 +1,8 @@
 inputs 9
 
+# inputs.9 adder or subtractor selector
+#   0 = add, 1 = subtractor
+
 define fa1 full-adder 3 3
 define fa2 full-adder 3 3
 define fa3 full-adder 3 3
