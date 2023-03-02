@@ -1,14 +1,16 @@
 inputs 20
 
 # instructions
+# LRA   MOV R, A    MAR = ACC
+#    2, 7, = 1
 # LMA	MOV M, A	MEM = ACC // use DataWord(bus17~20) as memory address
-#    2, 7, 8 = 1, 17 ~ 20 = MEM ADDRESS
-# LAM   MOV A, M    ACC = MEM // use DataWord(bus17~20) as memory address
-#    3, 6, 9, 11 = 1, 17~ 20 = MEM ADDRESS (ADDRESS - 1)
+#    2, 8 = 1, 17 ~ 20 = MEM ADDRESS
+# LAM   MOV A, M    ACC = MEM // use mar as memory address
+#    3, 6, 9, 15 = 1, 17~ 20 = MEM ADDRESS (ADDRESS - 1)
 # ADI   ADD A, I    ACC = ACC + Immediate Value
 #    3, 6, 13, 14 = 1, 17~20 = Immediate Value
 # NDI	ANI	    	A = A ∧ Immediate Value
-#    3, 6, 7 = 1, 17~20 = Immediate Value
+#    3, 6 = 1, 17~20 = Immediate Value
 
 # input 1 ~ 12 = manual-cu
 # ~~ i1 = acc in ~~
@@ -104,10 +106,10 @@ connect ACC-OUT.i6 CU.o2
 connect ACC-OUT.i7 CU.o2
 connect ACC-OUT.i8 CU.o2
 
-#connect BUS-i5.i6 ACC-OUT.o1
-#connect BUS-i6.i6 ACC-OUT.o2
-#connect BUS-i7.i6 ACC-OUT.o3
-#connect BUS-i8.i6 ACC-OUT.o4
+connect BUS-i5.i6 ACC-OUT.o1
+connect BUS-i6.i6 ACC-OUT.o2
+connect BUS-i7.i6 ACC-OUT.o3
+connect BUS-i8.i6 ACC-OUT.o4
 
 define TEMP complex/4bit-rising-edge-enable-register 7 4
 connect TEMP.i1 BUS.o5
