@@ -137,6 +137,7 @@ func parse(script string) (bash string, err error) {
 				return bash, err
 			}
 			if _, ok := commandsByName[e1.GateName]; !ok {
+				log.Println(e1.GateName, "not declared gate name")
 				err = cc.InvalidElement
 				panic(err)
 				return bash, err
