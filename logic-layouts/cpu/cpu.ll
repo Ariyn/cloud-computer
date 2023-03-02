@@ -3,17 +3,17 @@ inputs 20
 # instructions
 # LRA   MOV R, A    MAR = ACC
 #    2, 7, = 1
-# LMA	MOV M, A	MEM = ACC // use DataWord(bus17~20) as memory address
-#    2, 8 = 1, 17 ~ 20 = MEM ADDRESS
+# LMA	MOV M, A	MEM = ACC // use mar as memory address
+#    2, 8 = 1
 # LAM   MOV A, M    ACC = MEM // use mar as memory address
-#    3, 6, 9, 15 = 1, 17~ 20 = MEM ADDRESS (ADDRESS - 1)
+#    1, 3, 6, 9, 15 = 1
 # ADI   ADD A, I    ACC = ACC + Immediate Value
-#    3, 6, 13, 14 = 1, 17~20 = Immediate Value
+#    1, 3, 6, 13, 14 = 1, 17~20 = Immediate Value
 # NDI	ANI	    	A = A ∧ Immediate Value
-#    3, 6 = 1, 17~20 = Immediate Value
+#    1, 3, 6 = 1, 17~20 = Immediate Value
 
 # input 1 ~ 12 = manual-cu
-# ~~ i1 = acc in ~~
+# i1 = acc in
 # i2 = acc out
 # i3 = temp in
 # i4 = temp out
@@ -82,12 +82,13 @@ connect CU.i9 $inputs.9
 connect CU.i10 $inputs.10
 connect CU.i11 $inputs.11
 
-define ACC-FIRST 4bit-register 6 4
+define ACC-FIRST complex/4bit-enable-register 7 4
 #connect ACC-FIRST.i1 BUS.o5
 #connect ACC-FIRST.i2 BUS.o6
 #connect ACC-FIRST.i3 BUS.o7
 #connect ACC-FIRST.i4 BUS.o8
 connect ACC-FIRST.i6 $inputs.12
+connect ACC-FIRST.i7 CU.o1
 
 define ACC-SECOND 4bit-register 6 4
 connect ACC-SECOND.i1 ACC-FIRST.o1
