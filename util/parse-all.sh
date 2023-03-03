@@ -1,6 +1,10 @@
 #!/bin/bash
 
 for i in logic-layouts/*; do
-echo $i;
-util/parse $i;
+
+	if [[ $i == "logic-layouts/spec.ll" ]]; then
+		continue
+	fi
+
+	util/parse $i;
 done

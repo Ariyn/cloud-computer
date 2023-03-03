@@ -2,7 +2,11 @@
 
 ll_file=$1
 name=$(basename -s .ll $1)
+#name=${ll_file#logic-layouts/}
+parent_name=$(dirname ${ll_file#logic-layouts/})
 
 echo $ll_file $name
-bin/parser -file $ll_file > "bin/$name"
-chmod 755 "bin/$name"
+[ ! -d "bin/$parent_name" ] && mkdir -p "bin/$parent_name"
+
+bin/parser -file $ll_file > "bin/$parent_name/$name"
+chmod 755 "bin/$parent_name/$name"

@@ -76,57 +76,6 @@ func main() {
 	fmt.Println(bashScript)
 }
 
-func parseRom(script string) (llScript string, err error) {
-	llScript = `inputs 5
-	# inputs.1 ~ inputs.4 = selector
-	#  inputs.1 = LSB, 4 = MSB
-	# inputs.5 = clock
-
-	define selector 4bit-decoder
-	connect selector.i1 $inputs.1
-	connect selector.i2 $inputs.2
-	connect selector.i3 $inputs.3
-	connect selector.i4 $inputs.4
-
-	define or1 or 16 1
-	define or2 or 16 1
-	define or3 or 16 1
-	define or4 or 16 1
-
-	{rom_data}
-
-	define r 4bit-register
-	connect r.i1 or1.o1
-	connect r.i2 or2.o1
-	connect r.i3 or3.o1
-	connect r.i4 or4.o1
-	connect r.i6 $inputs.5
-
-	alias o1 r.o1
-	alias o2 r.o2
-	alias o3 r.o3
-	alias o4 r.o4`
-
-	iterationFormat := `define and{i}-{j} and 2 1
-connect and{i}-{j}.i1 selector.o{i}
-connect and{i}-{j}.i2 {bit}
-connect or{j}.i{i} and{i}-{j}.o1`
-
-	romData := make([]string, 0)
-	for i, line := range strings.Split(script, "\n") {
-		for j, c := range line {
-			compliedLine := strings.ReplaceAll(iterationFormat, "{i}", strconv.Itoa(i+1))
-			compliedLine = strings.ReplaceAll(compliedLine, "{j}", strconv.Itoa(j+1))
-			compliedLine = strings.ReplaceAll(compliedLine, "{bit}", string(c))
-			romData = append(romData, compliedLine)
-		}
-	}
-
-	llScript = strings.ReplaceAll(llScript, "{rom_data}", strings.Join(romData, "\n\n"))
-
-	return
-}
-
 func parse(script string) (bash string, err error) {
 	commandsByName := make(map[string]command)
 	commandsByName["inputs"] = &definition{
@@ -188,6 +137,7 @@ func parse(script string) (bash string, err error) {
 				return bash, err
 			}
 			if _, ok := commandsByName[e1.GateName]; !ok {
+				log.Println(e1.GateName, "not declared gate name")
 				err = cc.InvalidElement
 				panic(err)
 				return bash, err

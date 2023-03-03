@@ -8,7 +8,7 @@ inputs 13
 # inputs.10 ~ inputs.12 = alu operand
 #   10 is LSB, 12 is MSB.
 #   0: A and B, 1: A or B, 2: not A, 3: A + B, 4: LOAD A
-# inputs.12 = destination selector
+# inputs.13 = destination selector
 #  destination selector is 0: destination to ram
 #  destination selector is 1: destination to alu inputs b
 
@@ -54,19 +54,12 @@ define clockNot not 1 1
 connect clockNot.i1 $inputs.5
 connect accm2.i6 clockNot.o1
 
-define mux 4x8-mux 5 8
-connect mux.i1 accm2.o1
-connect mux.i2 accm2.o2
-connect mux.i3 accm2.o3
-connect mux.i4 accm2.o4
-connect mux.i5 $inputs.13
+connect ram.i1 accm2.o1
+connect ram.i2 accm2.o2
+connect ram.i3 accm2.o3
+connect ram.i4 accm2.o4
 
-connect ram.i1 mux.o1
-connect ram.i2 mux.o2
-connect ram.i3 mux.o3
-connect ram.i4 mux.o4
-
-connect alu.i5 mux.o5
-connect alu.i6 mux.o6
-connect alu.i7 mux.o7
-connect alu.i8 mux.o8
+connect alu.i5 accm2.o1
+connect alu.i6 accm2.o2
+connect alu.i7 accm2.o3
+connect alu.i8 accm2.o4
