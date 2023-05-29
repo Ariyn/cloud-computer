@@ -19,10 +19,10 @@ func main() {
 		log.Println(inputs)
 	}
 
-	or := gate.NewAndGate(name, inputs, outputs)
-	or.UseOptimization = cc.UseOptimization
+	and := gate.NewAndGate(name, inputs, outputs)
+	and.UseOptimization = cc.UseOptimization
 
-	err := cc.RunGateWithRedis(context.Background(), or)
+	err := cc.RunGateWithRedis(context.Background(), and)
 	if err != nil {
 		panic(err)
 	}
