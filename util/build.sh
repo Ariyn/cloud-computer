@@ -7,4 +7,4 @@ go build -o bin/xor ./app/xor
 go build -o "bin/alias" "./app/alias"
 go build -o bin/flipflop ./app/flipflop
 go build -o bin/input ./app/input
-go build -o bin/parser ./parser
+go build -o bin/parser ./app/parser
