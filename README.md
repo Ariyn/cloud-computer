@@ -2,7 +2,7 @@
 
 This project simulate logic-gates based on cloud computing concept.
 
-Each logic gates will run as single process and they connected with redis [pub/sub](https://redis.io/docs/manual/pubsub/).
+Each logic gates will run as single process, and they connected with redis [pub/sub](https://redis.io/docs/manual/pubsub/).
 So you can make distributed cpu.
 
 ## Requirements
@@ -13,7 +13,7 @@ So you can make distributed cpu.
   
 - go 1.19.4
 
-  Other version can handle this project, but I didn't test them.
+  Other versions may can handle this project, but I didn't test them.
 
 ## How to install
 
@@ -46,20 +46,20 @@ You need 3 different terminals for now.
 /cloud-computer > bin/half-adder -name ha
 ```
 
-Half adder's name will be ha. Every children of half adder will be ha.XXX
+Half adder's name will be ha. Every child of half adder will be `ha.XXX`
 
-Basically name of single gate is combination of parent, grand parent, ...
+Basically name of single gate is combination of parent, grand parent, ... such as `full-adder.half-adder1.and1`
 
 Terminal 2
 ```bash
-/cloud-computer > go run ./watcher -names ha.sum -names ha.carry
+/cloud-computer > go run ./watcher -name ha
 # carry and sum is defined in half-adder.ll and compiled into bash script
 ```
 
 Watcher will subscribe names and print when they changed.
-You can watch any thing you want to see.
+You can watch anything you want to see.
 
-WARN: You can't watch input, because there is no "input". Every gates publish their "output" to redis and subscribe other's "output" as input.
+WARN: You can't watch input, because there is no "input". Every gate publish their "output" to redis and subscribe other's "output" as input.
 
 Terminal 3
 ```bash
@@ -78,7 +78,7 @@ Terminal 3
 
 If you publish 1 or 0 to ha.inputs.1, subscribing gates will receive, do stuff and publish their output.
 
-WARN: There is no "half adder" gate. ".ll" script will be translated into bunch of "not", "or", "and", "xor", "flip flop" gates. Even you published to ha.inputs.1, some children of half adder will receive.
+WARN: There is no "half adder" gate. ".ll" script will be translated into a bunch of "not", "or", "and", "xor", "flip-flop" gates. Even you published to ha.inputs.1, some children of half adder will receive.
 
 ## Next things
 

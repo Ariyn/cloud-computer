@@ -11,10 +11,12 @@ import (
 
 var ramName string
 var wordSize int
+var hostRedisUrl string
 
 func init() {
 	flag.StringVar(&ramName, "name", "", "name of ram watch")
 	flag.IntVar(&wordSize, "words", 16, "size of ram")
+	flag.StringVar(&hostRedisUrl, "redis", "localhost:6379", "redis host url")
 }
 
 // TODO: 이부분 RunRedis와 거의 동일함. 추상화 할 방법 찾아보기
@@ -22,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	log.Println("running")
-	client := cc.ConnectRedis()
+	client := cc.ConnectRedis(hostRedisUrl)
 	log.Println("connected")
 
 	inputs := make([]<-chan bool, 0)
