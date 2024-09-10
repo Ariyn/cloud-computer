@@ -368,7 +368,7 @@ func (a Alias) Bash() string {
 		} else {
 			target = "0"
 		}
-		return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -i1 "%s"`, a.Name, target)
+		return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -debug "${debug}" -i1 "%s"`, a.Name, target)
 	}
 
 	if target[0] == '$' && 7 <= len(target) && target[1:7] == "inputs" {
@@ -379,7 +379,7 @@ func (a Alias) Bash() string {
 		target = "${name_variable}" + target
 	}
 
-	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -i1 "%s"`, a.Name, target)
+	return fmt.Sprintf(`bin/alias -name "${name_variable}%s" -debug "${debug}" -i1 "%s"`, a.Name, target)
 }
 
 func parseAlias(name, target string) (alias Alias, err error) {

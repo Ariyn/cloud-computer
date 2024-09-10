@@ -50,6 +50,7 @@ func parseArguments() {
 			index += 1
 		} else if arg == "-name" {
 			Name = os.Args[index+1]
+			index += 1
 		} else if arg == "-no-optimization" {
 			UseOptimization = false
 		} else if strings.HasPrefix(arg, "-o") {
@@ -93,9 +94,9 @@ func ParseInputs(inputs ...string) (elements []Element) {
 }
 
 func CreateOutputs(size int) (elements []Element) {
-	for i := 0; i < size; i++ {
+	for i := 1; i <= size; i++ {
 		e := Element{
-			Part:    fmt.Sprintf("o%d", i+1),
+			Part:    fmt.Sprintf("o%d", i),
 			IsAlias: false,
 		}
 
