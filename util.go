@@ -16,6 +16,22 @@ func GetArgument(name string) (values []string) {
 		}
 	}
 
+	if len(values) != 0 {
+		return
+	}
+
+	envValue := os.Getenv(name)
+	if envValue != "" {
+		values = append(values, envValue)
+		return
+	}
+
+	envValue = os.Getenv(strings.ToUpper(name))
+	if envValue != "" {
+		values = append(values, envValue)
+		return
+	}
+
 	return
 }
 
