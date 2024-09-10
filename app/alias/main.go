@@ -4,9 +4,15 @@ import (
 	"context"
 	cc "github.com/ariyn/cloud-computer"
 	"github.com/ariyn/cloud-computer/gate"
+	"log"
 )
 
 func main() {
+	config, err := cc.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	name := cc.Name
 	inputs := cc.ParseInputs(cc.Inputs...)
 	outputs := []cc.Element{{
@@ -16,8 +22,7 @@ func main() {
 	alias := gate.NewAliasGate(name, inputs, outputs)
 	alias.UseOptimization = cc.UseOptimization
 
-	err := cc.RunGateWithRedis(context.Background(), alias)
-	if err != nil {
-		panic(err)
+	if err = cc.RunGateWithRedis(context.Background(), config.Redis.Host, alias); err != nil {
+		log.Fatal(err)
 	}
 }

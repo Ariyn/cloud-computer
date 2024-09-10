@@ -1,0 +1,5 @@
+{
+  "redis": {
+    "host": "localhost:6379"
+  }
+}

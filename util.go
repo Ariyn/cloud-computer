@@ -6,6 +6,19 @@ import (
 	"strings"
 )
 
+func GetArgument(name string) (values []string) {
+	arguments := os.Args[1:]
+
+	for index := range arguments {
+		if arguments[index] == name || arguments[index] == "-"+name {
+			values = append(values, arguments[index+1])
+			index += 1
+		}
+	}
+
+	return
+}
+
 func parseArguments() {
 	for index := 1; index < len(os.Args); index++ {
 		arg := os.Args[index]

@@ -8,6 +8,11 @@ import (
 )
 
 func main() {
+	config, err := cc.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	name := cc.Name
 	if name == "" {
 		name = "and"
@@ -22,8 +27,7 @@ func main() {
 	and := gate.NewAndGate(name, inputs, outputs)
 	and.UseOptimization = cc.UseOptimization
 
-	err := cc.RunGateWithRedis(context.Background(), and)
-	if err != nil {
-		panic(err)
+	if err = cc.RunGateWithRedis(context.Background(), config.Redis.Host, and); err != nil {
+		log.Fatal(err)
 	}
 }

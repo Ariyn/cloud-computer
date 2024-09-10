@@ -8,6 +8,11 @@ import (
 )
 
 func main() {
+	config, err := cc.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	name := cc.Name
 	if name == "" {
 		name = "or"
@@ -22,8 +27,7 @@ func main() {
 	or := gate.NewOrGate(name, inputs, outputs)
 	or.UseOptimization = cc.UseOptimization
 
-	err := cc.RunGateWithRedis(context.Background(), or)
-	if err != nil {
-		panic(err)
+	if err = cc.RunGateWithRedis(context.Background(), config.Redis.Host, or); err != nil {
+		log.Fatal(err)
 	}
 }

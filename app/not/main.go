@@ -4,9 +4,15 @@ import (
 	"context"
 	cc "github.com/ariyn/cloud-computer"
 	"github.com/ariyn/cloud-computer/gate"
+	"log"
 )
 
 func main() {
+	config, err := cc.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	name := cc.Name
 	if name == "" {
 		name = "not"
@@ -18,8 +24,7 @@ func main() {
 	not := gate.NewNotGate(name, inputs, outputs)
 	not.UseOptimization = cc.UseOptimization
 
-	err := cc.RunGateWithRedis(context.Background(), not)
-	if err != nil {
-		panic(err)
+	if err = cc.RunGateWithRedis(context.Background(), config.Redis.Host, not); err != nil {
+		log.Fatal(err)
 	}
 }
