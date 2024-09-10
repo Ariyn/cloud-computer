@@ -46,7 +46,7 @@ func getSelectCaseSignals(signals ...os.Signal) (sc reflect.SelectCase, err erro
 }
 
 func RunGateWithRedis(ctx context.Context, gate Gater) (err error) {
-	client := ConnectRedis()
+	client := ConnectRedis("localhost:6379")
 
 	gate.Init(ctx, client)
 

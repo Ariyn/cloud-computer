@@ -36,12 +36,14 @@ var name string
 var input bool
 var output bool
 var excepts arrayFlags
+var hostRedisUrl string
 
 var nameRegex *regexp.Regexp
 
 func init() {
 	flag.Var(&excepts, "e", "will not watch itself, and it's children")
 	flag.StringVar(&name, "name", "", "name for watch")
+	flag.StringVar(&hostRedisUrl, "host", "localhost:6379", "host for redis")
 
 	nameRegex = regexp.MustCompile(`.+?\.[io](\d+)`)
 }
@@ -119,7 +121,7 @@ func main() {
 	}
 
 	log.Println("running")
-	client := cc.ConnectRedis()
+	client := cc.ConnectRedis(hostRedisUrl)
 	log.Println("connected")
 
 	var err error

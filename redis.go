@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func ConnectRedis() *redis.Client {
+func ConnectRedis(host string) *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:       "localhost:6379",
+		Addr:       host,
 		DB:         0,
 		MaxRetries: 5,
 	})
