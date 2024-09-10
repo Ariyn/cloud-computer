@@ -19,11 +19,9 @@ func main() {
 	}
 
 	inputs := cc.ParseInputs(cc.Inputs...)
-	e := cc.Element{
-		GateName: name,
-	}
+	outputs := cc.CreateOutputs(1)
 
-	input := gate.NewInputGate(name, inputs, []cc.Element{e})
+	input := gate.NewInputGate(name, inputs, outputs)
 	input.UseOptimization = cc.UseOptimization
 
 	if err = cc.RunGateWithRedis(context.Background(), config.Redis.Host, input); err != nil {

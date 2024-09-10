@@ -71,21 +71,21 @@ func RunGateWithRedis(ctx context.Context, hostUrl string, gate Gater) (err erro
 	cases = append(cases, sc)
 
 	defer func() {
-		deleteRedis(ctx, client, gate.GetName()+".status")
+		deleteRedis(ctx, client, gate.GetName()+":status")
 		for _, element := range gate.GetOutputs() {
 			element.GateName = gate.GetName()
-			deleteRedis(ctx, client, element.String()+".status")
+			deleteRedis(ctx, client, element.String()+":status")
 		}
 
 		if gate.GetType() == "input" {
 			parents := strings.Split(gate.GetName(), ".")
 			grandParent := strings.Join(parents[:len(parents)-1], ".")
-			deleteRedis(ctx, client, grandParent+".inputs")
-			deleteRedis(ctx, client, grandParent+".children")
+			deleteRedis(ctx, client, grandParent+":inputs")
+			deleteRedis(ctx, client, grandParent+":children")
 		}
 		if gate.GetType() == "alias" {
 			parents := strings.Split(gate.GetName(), ".")
-			deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+".outputs")
+			deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+":outputs")
 		}
 	}()
 
@@ -104,7 +104,7 @@ func RunGateWithRedis(ctx context.Context, hostUrl string, gate Gater) (err erro
 			continue
 		}
 
-		err = writeRedis(ctx, client, gate.GetName()+".status", outputs[0])
+		err = writeRedis(ctx, client, gate.GetName()+":status", outputs[0])
 		if err != nil {
 			panic(err)
 		}

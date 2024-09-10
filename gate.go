@@ -31,7 +31,7 @@ func (g *Gate) Init(ctx context.Context, client DataSourcer) {
 		}
 		g.InputChannels[i] = client.GetInputChannel(ctx, element.String())
 
-		v, err := client.GetCurrentValue(ctx, element.String()+".status")
+		v, err := client.GetCurrentValue(ctx, element.String()+":status")
 		if err != nil {
 			panic(err)
 		}

@@ -98,7 +98,7 @@ func getWatches(ctx context.Context, client *redis.Client, name string) *Watches
 	channels := make([]<-chan bool, len(w))
 	for i, name := range w {
 		channels[i] = cc.ReadAsyncRedis(context.TODO(), client, name)
-		v, err := cc.ReadRedis(ctx, client, name+".status")
+		v, err := cc.ReadRedis(ctx, client, name+":status")
 		if err != nil {
 			panic(err)
 		}
@@ -137,11 +137,11 @@ func main() {
 	for _, c := range children {
 		w := Watch{}
 		w.Name = c
-		w.Input = getWatches(context.Background(), client, c+".inputs")
+		w.Input = getWatches(context.Background(), client, c+":inputs")
 		w.InputSize = w.Input.Length()
 		w.InputIndex = index
 
-		w.Output = getWatches(context.Background(), client, c+".outputs")
+		w.Output = getWatches(context.Background(), client, c+":outputs")
 		w.OutputSize = w.Output.Length()
 		w.OutputIndex = index + w.InputSize
 
@@ -188,7 +188,7 @@ func getWatch(watches []Watch, index int) (*Watches, int, error) {
 }
 
 func getChildren(client *redis.Client, name string) (children []string, err error) {
-	rawChildren, err := client.SMembers(context.Background(), name+".children").Result()
+	rawChildren, err := client.SMembers(context.Background(), name+":children").Result()
 	if err != nil {
 		return
 	}
@@ -271,13 +271,13 @@ func printWatches(watches []Watch) {
 }
 
 func printBits(maximumSizes []int, prefix string, inputBits, outputBits []bool) {
-	inputName := fmt.Sprintf("%s.inputs", prefix)
+	inputName := fmt.Sprintf("%s:inputs", prefix)
 	inputName += strings.Repeat(" ", maximumSizes[0]-len(inputName)+3)
 
 	input := getBitString(inputBits)
 	input += strings.Repeat(" ", maximumSizes[1]-len(input)+3)
 
-	outputName := fmt.Sprintf("%s.outputs", prefix)
+	outputName := fmt.Sprintf("%s:outputs", prefix)
 	outputName += strings.Repeat(" ", maximumSizes[2]-len(outputName)+3)
 
 	output := getBitString(outputBits)

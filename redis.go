@@ -73,14 +73,14 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 
 func addChildren(ctx context.Context, client *redis.Client, name string) {
 	parents := strings.Split(name, ".")
-	client.SAdd(ctx, parents[0]+".children", strings.Join(parents[:len(parents)-1], "."))
+	client.SAdd(ctx, parents[0]+":children", strings.Join(parents[:len(parents)-1], "."))
 }
 
 func addInput(ctx context.Context, client *redis.Client, gateName, name string) {
 	//client.SAdd(gateName+".inputs", name)
 
 	parents := strings.Split(gateName, ".")
-	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+".inputs", name)
+	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+":inputs", name+".o1")
 }
 
 // TODO: rename Write to Publish
@@ -94,7 +94,7 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 				data = 1
 			}
 
-			err := writeRedis(ctx, client, name+".status", s)
+			err := writeRedis(ctx, client, name+":status", s)
 			if err != nil {
 				panic(err)
 			}
@@ -113,7 +113,7 @@ func addOutput(ctx context.Context, client *redis.Client, gateName, name string)
 	//client.SAdd(gateName+".outputs", name)
 
 	parents := strings.Split(gateName, ".")
-	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+".outputs", name)
+	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+":outputs", name)
 	//client.SAdd(parents[0]+".outputs", name)
 }
 
