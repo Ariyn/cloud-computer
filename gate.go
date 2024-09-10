@@ -2,7 +2,6 @@ package cloud_computer
 
 import (
 	"context"
-	"github.com/go-redis/redis/v9"
 	"reflect"
 )
 
@@ -20,7 +19,7 @@ type Gate struct {
 	OutputChannels  []chan<- bool
 }
 
-func (g *Gate) Init(ctx context.Context, client *redis.Client) {
+func (g *Gate) Init(ctx context.Context, client DataSourcer) {
 	g.PreviousInputs = make([]bool, len(g.Inputs))
 	g.PreviousOutputs = make([]bool, len(g.Outputs))
 
@@ -30,24 +29,23 @@ func (g *Gate) Init(ctx context.Context, client *redis.Client) {
 			g.PreviousInputs[i] = element.StaticValue
 			continue
 		}
+		g.InputChannels[i] = client.GetInputChannel(ctx, element.String())
 
-		g.InputChannels[i] = ReadAsyncRedis(ctx, client, element.String())
-
-		v, err := ReadRedis(ctx, client, element.String()+".status")
+		v, err := client.GetCurrentValue(ctx, element.String()+".status")
 		if err != nil {
 			panic(err)
 		}
+
 		g.PreviousInputs[i] = v
 	}
+
+	g.OutputChannels = make([]chan<- bool, len(g.Outputs))
 
 	for i, element := range g.Outputs {
 		element.GateName = g.GetName()
 		g.Outputs[i] = element
-	}
 
-	g.OutputChannels = make([]chan<- bool, len(g.Outputs))
-	for i, element := range g.GetOutputs() {
-		g.OutputChannels[i] = WriteAsyncRedis(ctx, client, element.String())
+		g.OutputChannels[i] = client.GetOutputChannel(ctx, element.String())
 	}
 }
 
@@ -115,7 +113,7 @@ func (g *Gate) GetType() string {
 }
 
 type Gater interface {
-	Init(ctx context.Context, client *redis.Client)
+	Init(ctx context.Context, client DataSourcer)
 	Handler(index int, input bool) (o []bool, changed bool)
 	GetName() string
 	GetInputs() (inputs []Element)

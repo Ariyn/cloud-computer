@@ -3,7 +3,6 @@ package gate
 import (
 	"context"
 	cc "github.com/ariyn/cloud-computer"
-	"github.com/go-redis/redis/v9"
 	"log"
 )
 
@@ -23,7 +22,7 @@ func NewNotGate(name string, inputs []cc.Element, outputs []cc.Element) *Not {
 	}
 }
 
-func (g *Not) Init(ctx context.Context, client *redis.Client) {
+func (g *Not) Init(ctx context.Context, client cc.DataSourcer) {
 	g.Gate.Init(ctx, client)
 
 	for i, v := range g.PreviousInputs {

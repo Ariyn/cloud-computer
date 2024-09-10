@@ -7,6 +7,30 @@ import (
 	"strings"
 )
 
+var _ DataSourcer = (*RedisSource)(nil)
+
+type RedisSource struct {
+	Client *redis.Client
+}
+
+func NewRedisSource(host string) *RedisSource {
+	return &RedisSource{
+		Client: ConnectRedis(host),
+	}
+}
+
+func (r *RedisSource) GetInputChannel(ctx context.Context, name string) <-chan bool {
+	return ReadAsyncRedis(ctx, r.Client, name)
+}
+
+func (r *RedisSource) GetCurrentValue(ctx context.Context, name string) (bool, error) {
+	return ReadRedis(ctx, r.Client, name)
+}
+
+func (r *RedisSource) GetOutputChannel(ctx context.Context, name string) chan<- bool {
+	return WriteAsyncRedis(ctx, r.Client, name)
+}
+
 func ConnectRedis(host string) *redis.Client {
 	client := redis.NewClient(&redis.Options{
 		Addr:       host,

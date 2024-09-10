@@ -3,7 +3,6 @@ package gate
 import (
 	"context"
 	cc "github.com/ariyn/cloud-computer"
-	"github.com/go-redis/redis/v9"
 	"log"
 )
 
@@ -24,7 +23,7 @@ func NewFlipFlopGate(name string, inputs []cc.Element, outputs []cc.Element) *Fl
 	}
 }
 
-func (g *FlipFlop) Init(ctx context.Context, client *redis.Client) {
+func (g *FlipFlop) Init(ctx context.Context, client cc.DataSourcer) {
 	g.Gate.Init(ctx, client)
 
 	for i, v := range g.PreviousInputs {
