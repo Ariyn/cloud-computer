@@ -2,6 +2,7 @@ package cloud_computer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -58,7 +59,7 @@ func parseArguments() {
 		} else if arg == "-debug" {
 			if os.Args[index+1] == "1" {
 				IsDebugging = true
-				//log.Println("RUNNING DEBUGGING MODE")
+				log.Println("RUNNING IN DEBUGGING MODE")
 			}
 			index += 1
 		} else if arg == "-v" {

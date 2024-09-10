@@ -23,12 +23,20 @@ func (r *RedisSource) GetInputChannel(ctx context.Context, name string) <-chan b
 	return ReadAsyncRedis(ctx, r.Client, name)
 }
 
+func (r *RedisSource) GetOutputChannel(ctx context.Context, name string) chan<- bool {
+	return WriteAsyncRedis(ctx, r.Client, name)
+}
+
 func (r *RedisSource) GetCurrentValue(ctx context.Context, name string) (bool, error) {
 	return ReadRedis(ctx, r.Client, name)
 }
 
-func (r *RedisSource) GetOutputChannel(ctx context.Context, name string) chan<- bool {
-	return WriteAsyncRedis(ctx, r.Client, name)
+func (r *RedisSource) SetValue(ctx context.Context, name string, value any) error {
+	return r.Client.Set(ctx, name, value, 0).Err()
+}
+
+func (r *RedisSource) AddList(ctx context.Context, name string, value any) error {
+	return r.Client.SAdd(ctx, name, value).Err()
 }
 
 func ConnectRedis(host string) *redis.Client {

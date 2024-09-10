@@ -2,6 +2,7 @@ package cloud_computer
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 )
 
@@ -20,6 +21,25 @@ type Gate struct {
 }
 
 func (g *Gate) Init(ctx context.Context, client DataSourcer) {
+	if IsDebugging {
+		inputs := make([]string, 0)
+		for _, input := range g.Inputs {
+			inputs = append(inputs, input.String())
+		}
+
+		outputs := make([]string, 0)
+		for _, output := range g.Outputs {
+			outputs = append(outputs, output.String())
+		}
+
+		d, _ := json.Marshal(map[string]any{
+			"inputs":  inputs,
+			"outputs": outputs,
+			"name":    g.Name,
+		})
+		_ = client.AddList(ctx, "DEBUG:ELEMENTS", string(d))
+	}
+
 	g.PreviousInputs = make([]bool, len(g.Inputs))
 	g.PreviousOutputs = make([]bool, len(g.Outputs))
 

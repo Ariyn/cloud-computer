@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -146,6 +147,71 @@ func main() {
 		w.OutputIndex = index + w.InputSize
 
 		watches = append(watches, w)
+		index += w.InputSize + w.OutputSize
+	}
+
+	elementResults, err := client.SMembers(context.Background(), "DEBUG:ELEMENTS").Result()
+	if err != nil {
+		log.Println("can't get debug elements")
+		panic(err)
+	}
+
+	elements := make([]map[string]any, 0)
+	for _, element := range elementResults {
+		var e map[string]any
+		err = json.Unmarshal([]byte(element), &e)
+		if err != nil {
+			panic(err)
+		}
+
+		elements = append(elements, e)
+	}
+	sort.Slice(elements, func(i, j int) bool { return elements[i]["name"].(string) < elements[j]["name"].(string) })
+
+	for _, e := range elements {
+		w := Watch{}
+		w.Name = e["name"].(string)
+
+		values := make([]bool, 0)
+		channels := make([]<-chan bool, 0)
+		for _, e := range e["inputs"].([]any) {
+			channels = append(channels, cc.ReadAsyncRedis(context.TODO(), client, e.(string)))
+
+			v, err := cc.ReadRedis(context.TODO(), client, e.(string)+":status")
+			if err != nil {
+				panic(err)
+			}
+			values = append(values, v)
+		}
+
+		w.Input = &Watches{
+			channels: channels,
+			values:   values,
+		}
+		w.InputSize = len(channels)
+		w.InputIndex = index
+
+		values = make([]bool, 0)
+		channels = make([]<-chan bool, 0)
+		for _, e := range e["outputs"].([]any) {
+			channels = append(channels, cc.ReadAsyncRedis(context.TODO(), client, w.Name+e.(string)))
+
+			v, err := cc.ReadRedis(context.TODO(), client, w.Name+e.(string)+":status")
+			if err != nil {
+				panic(err)
+			}
+			values = append(values, v)
+		}
+
+		w.Output = &Watches{
+			channels: channels,
+			values:   values,
+		}
+		w.OutputSize = len(channels)
+		w.OutputIndex = index + w.InputSize
+
+		watches = append(watches, w)
+
 		index += w.InputSize + w.OutputSize
 	}
 
