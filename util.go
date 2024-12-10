@@ -104,3 +104,16 @@ func CreateOutputs(size int) (elements []Element) {
 	}
 	return
 }
+
+func getParentName(name string) string {
+	tokens := strings.Split(name, ".")
+	if len(tokens) == 1 {
+		return tokens[0]
+	}
+
+	return strings.Join(tokens[:len(tokens)-1], ".")
+}
+func getRootName(name string) string {
+	tokens := strings.Split(name, ".")
+	return tokens[0]
+}
