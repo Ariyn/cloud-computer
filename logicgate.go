@@ -3,6 +3,7 @@ package cloud_computer
 import (
 	"context"
 	"errors"
+	"github.com/go-redis/redis/v9"
 	"os"
 	"os/signal"
 	"reflect"
@@ -45,18 +46,35 @@ func getSelectCaseSignals(signals ...os.Signal) (sc reflect.SelectCase, err erro
 	return
 }
 
+func clearRedis(ctx context.Context, client *redis.Client, gate Gater) {
+	deleteRedis(ctx, client, gate.GetName()+":status")
+	for _, element := range gate.GetOutputs() {
+		element.GateName = gate.GetName()
+		deleteRedis(ctx, client, element.String()+":status")
+	}
+
+	if gate.GetType() == "input" {
+		parents := strings.Split(gate.GetName(), ".")
+		grandParent := strings.Join(parents[:len(parents)-1], ".")
+		deleteRedis(ctx, client, grandParent+":inputs")
+		deleteRedis(ctx, client, grandParent+":children")
+	}
+	if gate.GetType() == "alias" {
+		parents := strings.Split(gate.GetName(), ".")
+		deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+":outputs")
+	}
+}
+
 func RunGateWithRedis(ctx context.Context, hostUrl string, gate Gater) (err error) {
 	redisSource := NewRedisSource(hostUrl)
-	client := redisSource.Client
-
 	gate.Init(ctx, redisSource)
 
 	if gate.GetType() == "input" {
-		addInput(ctx, client, gate.GetName(), gate.GetName())
-		addChildren(ctx, client, gate.GetName())
+		addInput(ctx, redisSource, gate.GetName(), gate.GetName())
+		addChildren(ctx, redisSource, gate.GetName())
 	}
 	if gate.GetType() == "alias" {
-		addOutput(ctx, client, gate.GetName(), gate.GetName())
+		addOutput(ctx, redisSource, gate.GetName(), gate.GetName())
 	}
 
 	// TODO: inputs, outputs가 redis에 붙는 동작은 여기서 진행해야 한다.
@@ -70,24 +88,7 @@ func RunGateWithRedis(ctx context.Context, hostUrl string, gate Gater) (err erro
 	}
 	cases = append(cases, sc)
 
-	defer func() {
-		deleteRedis(ctx, client, gate.GetName()+":status")
-		for _, element := range gate.GetOutputs() {
-			element.GateName = gate.GetName()
-			deleteRedis(ctx, client, element.String()+":status")
-		}
-
-		if gate.GetType() == "input" {
-			parents := strings.Split(gate.GetName(), ".")
-			grandParent := strings.Join(parents[:len(parents)-1], ".")
-			deleteRedis(ctx, client, grandParent+":inputs")
-			deleteRedis(ctx, client, grandParent+":children")
-		}
-		if gate.GetType() == "alias" {
-			parents := strings.Split(gate.GetName(), ".")
-			deleteRedis(ctx, client, strings.Join(parents[:len(parents)-1], ".")+":outputs")
-		}
-	}()
+	defer clearRedis(ctx, redisSource.Client, gate)
 
 	for {
 		index, value, ok := reflect.Select(cases)
@@ -104,7 +105,7 @@ func RunGateWithRedis(ctx context.Context, hostUrl string, gate Gater) (err erro
 			continue
 		}
 
-		err = writeRedis(ctx, client, gate.GetName()+":status", outputs[0])
+		err = writeRedis(ctx, redisSource.Client, gate.GetName()+":status", outputs[0])
 		if err != nil {
 			panic(err)
 		}

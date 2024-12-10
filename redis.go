@@ -79,16 +79,18 @@ func ReadAsyncRedis(ctx context.Context, client *redis.Client, name string) (sta
 	return sChannel
 }
 
-func addChildren(ctx context.Context, client *redis.Client, name string) {
-	parents := strings.Split(name, ".")
-	client.SAdd(ctx, parents[0]+":children", strings.Join(parents[:len(parents)-1], "."))
+func addChildren(ctx context.Context, ds DataSourcer, name string) (err error) {
+	parentName := getParentName(name)
+	rootName := getRootName(name)
+	err = ds.AddList(ctx, rootName+":children", parentName)
+	return
 }
 
-func addInput(ctx context.Context, client *redis.Client, gateName, name string) {
-	//client.SAdd(gateName+".inputs", name)
+func addInput(ctx context.Context, ds DataSourcer, gateName, name string) (err error) {
+	parentName := getParentName(name)
 
-	parents := strings.Split(gateName, ".")
-	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+":inputs", name+".o1")
+	err = ds.AddList(ctx, parentName+":inputs", name+".o1")
+	return
 }
 
 // TODO: rename Write to Publish
@@ -117,12 +119,10 @@ func WriteAsyncRedis(ctx context.Context, client *redis.Client, name string) (st
 	return sChannel
 }
 
-func addOutput(ctx context.Context, client *redis.Client, gateName, name string) {
-	//client.SAdd(gateName+".outputs", name)
-
+func addOutput(ctx context.Context, ds DataSourcer, gateName, name string) (err error) {
 	parents := strings.Split(gateName, ".")
-	client.SAdd(ctx, strings.Join(parents[:len(parents)-1], ".")+":outputs", name)
-	//client.SAdd(parents[0]+".outputs", name)
+	err = ds.AddList(ctx, strings.Join(parents[:len(parents)-1], ".")+":outputs", name)
+	return err
 }
 
 func ReadRedis(ctx context.Context, client *redis.Client, name string) (value bool, err error) {
@@ -131,10 +131,7 @@ func ReadRedis(ctx context.Context, client *redis.Client, name string) (value bo
 		return
 	}
 
-	if v == "1" {
-		return true, nil
-	}
-	return false, nil
+	return v == "1", nil
 }
 
 func writeRedis(ctx context.Context, client *redis.Client, name string, value bool) (err error) {
