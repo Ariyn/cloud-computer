@@ -1,4 +1,4 @@
-# inputs 2
+inputs 2
 
 define x1 xor 2 1
 define a1 and 2 1

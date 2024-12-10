@@ -5,7 +5,7 @@
 inputs 6
 
 # inputs.4 ~ 6 = opcode
-#  inputs.4 = LSB, 6 = MSB
+#   inputs.4 = LSB, 6 = MSB
 # opcode 0 = A and B
 # opcode 1 = A or B
 # opcode 2 = not A
