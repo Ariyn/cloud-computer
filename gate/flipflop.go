@@ -44,7 +44,8 @@ func (g *FlipFlop) Handler(index int, value bool) (results []bool, changed bool)
 	} else { // If Enable is true
 		s := g.PreviousInputs[0]
 		r := g.PreviousInputs[1]
-		currentStatus := g.previousStatus // Default to previous state
+		oldStatus := g.previousStatus // Capture previous state
+		currentStatus := oldStatus    // Default to previous state
 
 		if s && !r { // S=1, R=0
 			currentStatus = true
